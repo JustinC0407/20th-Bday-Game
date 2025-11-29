@@ -32,7 +32,12 @@ function LevelHub({ gameState, onStartLevel, onOpenMemoryRoom, onResetGame }) {
   const [animationState, setAnimationState] = useState('idle');
   const [animationFrame, setAnimationFrame] = useState(0);
   const animationTimerRef = useRef(0);
-  
+
+  // PERFORMANCE FIX: Use refs to prevent interval multiplication
+  const animationStateRef = useRef('idle');
+  const animationFrameRef = useRef(0);
+  const leafTimeoutsRef = useRef([]);
+
   const { completedLevels, progress } = gameState;
 
   // Level data positioned in heart shape (avoiding title area)
@@ -175,11 +180,11 @@ function LevelHub({ gameState, onStartLevel, onOpenMemoryRoom, onResetGame }) {
     
     const updateCharacter = () => {
       const keys = keysRef.current;
-      
-      // Update animation state and frame timing
+
+      // Update animation state and frame timing (USING REFS - NO SETSTATE)
       let newAnimationState = 'idle';
       let isMoving = false;
-      
+
       if (keys['ArrowLeft'] || keys['KeyA']) {
         newAnimationState = 'runLeft';
         isMoving = true;
@@ -191,41 +196,41 @@ function LevelHub({ gameState, onStartLevel, onOpenMemoryRoom, onResetGame }) {
         newAnimationState = 'runRight';
         isMoving = true;
       }
-      
-      // Update animation state if changed
-      if (newAnimationState !== animationState) {
-        setAnimationState(newAnimationState);
-        setAnimationFrame(0);
+
+      // PERFORMANCE FIX: Update refs instead of state (prevents re-renders)
+      if (newAnimationState !== animationStateRef.current) {
+        animationStateRef.current = newAnimationState;
+        animationFrameRef.current = 0;
         animationTimerRef.current = 0;
       }
-      
+
       // Handle frame animation timing for running animations
       if (isMoving) {
         animationTimerRef.current += 1;
         if (animationTimerRef.current >= 12) { // 12 frames = ~200ms at 60fps
           animationTimerRef.current = 0;
-          setAnimationFrame(prev => (prev + 1) % 3);
+          animationFrameRef.current = (animationFrameRef.current + 1) % 3;
         }
       } else {
         // Reset to idle frame when not moving
-        setAnimationFrame(0);
+        animationFrameRef.current = 0;
         animationTimerRef.current = 0;
       }
-      
+
       setCharacter(prev => {
         let newX = prev.x;
         let newY = prev.y;
-        
+
         // Handle WASD and Arrow key movement
         if (keys['ArrowLeft'] || keys['KeyA']) newX -= moveSpeed;
         if (keys['ArrowRight'] || keys['KeyD']) newX += moveSpeed;
         if (keys['ArrowUp'] || keys['KeyW']) newY -= moveSpeed;
         if (keys['ArrowDown'] || keys['KeyS']) newY += moveSpeed;
-        
+
         // Keep character within screen bounds
         newX = Math.max(40, Math.min(window.innerWidth - 40, newX));
         newY = Math.max(40, Math.min(window.innerHeight - 40, newY));
-        
+
         return {
           ...prev,
           x: newX,
@@ -237,7 +242,22 @@ function LevelHub({ gameState, onStartLevel, onOpenMemoryRoom, onResetGame }) {
     const gameLoop = setInterval(updateCharacter, 1000/60); // 60 FPS
 
     return () => clearInterval(gameLoop);
-  }, [animationState]); // Add animationState to dependencies
+  }, []); // PERFORMANCE FIX: Empty array = only create interval once (prevents multiplication)
+
+  // Sync refs to state for rendering (only when values change)
+  useEffect(() => {
+    const syncInterval = setInterval(() => {
+      // PERFORMANCE FIX: Only update state when values actually change
+      if (animationStateRef.current !== animationState) {
+        setAnimationState(animationStateRef.current);
+      }
+      if (animationFrameRef.current !== animationFrame) {
+        setAnimationFrame(animationFrameRef.current);
+      }
+    }, 1000/60); // Check at 60 FPS, update only when changed
+
+    return () => clearInterval(syncInterval);
+  }, [animationState, animationFrame]);
 
   // Check proximity to levels and memory room
   useEffect(() => {
@@ -276,7 +296,7 @@ function LevelHub({ gameState, onStartLevel, onOpenMemoryRoom, onResetGame }) {
     const generateLeaf = () => {
       const leafTypes = ['🍂', '🍁', '🍃'];
       const animationClasses = ['leaf-1', 'leaf-2', 'leaf-3'];
-      
+
       const newLeaf = {
         id: Date.now() + Math.random(),
         type: leafTypes[Math.floor(Math.random() * leafTypes.length)],
@@ -287,23 +307,30 @@ function LevelHub({ gameState, onStartLevel, onOpenMemoryRoom, onResetGame }) {
 
       setFallingLeaves(prev => [...prev, newLeaf]);
 
-      // Remove leaf after animation completes (max 8 seconds + delay)
-      setTimeout(() => {
+      // PERFORMANCE FIX: Track timeout for cleanup
+      const timeout = setTimeout(() => {
         setFallingLeaves(prev => prev.filter(leaf => leaf.id !== newLeaf.id));
       }, 9000 + newLeaf.delay);
+      leafTimeoutsRef.current.push(timeout);
     };
 
-    // Generate a leaf every 0.5-1.5 seconds for testing
+    // Generate a leaf every 0.5-1.5 seconds
     const leafInterval = setInterval(() => {
       generateLeaf();
     }, 500 + Math.random() * 1000);
 
     // Generate some initial leaves
     for (let i = 0; i < 5; i++) {
-      setTimeout(generateLeaf, i * 800);
+      const initialTimeout = setTimeout(generateLeaf, i * 800);
+      leafTimeoutsRef.current.push(initialTimeout);
     }
 
-    return () => clearInterval(leafInterval);
+    // PERFORMANCE FIX: Clear all timeouts on cleanup
+    return () => {
+      clearInterval(leafInterval);
+      leafTimeoutsRef.current.forEach(clearTimeout);
+      leafTimeoutsRef.current = [];
+    };
   }, []);
 
 
