@@ -9,10 +9,10 @@ const BEAT_SIZE = 60;
 const HIT_ZONE_RADIUS = 40;
 const HIT_ZONE_Y = SCREEN_HEIGHT - 100;
 
-const FALL_SPEED = 12; // pixels per frame (adjusted for 135 BPM rhythm)
+const FALL_SPEED_PER_SECOND = 400; // pixels per second (adjusted for 135 BPM rhythm)
 const HIT_TOLERANCE = 80; // pixels above/below hit zone
 
-const SPAWN_INTERVAL = 13.5; // frames between spawns (synced to 135 BPM = 444ms per beat)
+const BEAT_INTERVAL_SECONDS = 60 / 67.5; // seconds between spawns (67.5 BPM = half of 135 BPM = 0.889s per beat)
 const TOTAL_HITS_NEEDED = 75;
 const TIME_LIMIT = 60; // seconds (1 minute)
 
@@ -21,7 +21,7 @@ const DOUBLE_NOTE_START_CHANCE = 0.10; // 10% at start
 const DOUBLE_NOTE_END_CHANCE = 0.30;   // 30% at end
 
 // Lane colors
-const LANE_COLORS = ['#9ed8dfff', '#C44569', '#F8B500', '#EA2027'];
+const LANE_COLORS = ['#9ed8dfff', '#c5f8c2ff', '#fa977eff', '#f4ab6bff'];
 
 function Level2_MoulinRouge({ lives, onComplete, onLoseLife, onReturnToHub, onResetLives }) {
   const canvasRef = useRef(null);
@@ -30,6 +30,11 @@ function Level2_MoulinRouge({ lives, onComplete, onLoseLife, onReturnToHub, onRe
   const frameCountRef = useRef(0);
   const audioRef = useRef(null);
   const backgroundRef = useRef(null);
+
+  // DELTA TIME FIX: Track actual time instead of frames
+  const lastFrameTimeRef = useRef(performance.now());
+  const timeSinceLastSecondRef = useRef(0);
+  const timeSinceLastBeatRef = useRef(0);
 
   // ============ GAME STATE ============
   const [musicStarted, setMusicStarted] = useState(false);
@@ -205,15 +210,21 @@ function Level2_MoulinRouge({ lives, onComplete, onLoseLife, onReturnToHub, onRe
   useEffect(() => {
     if (!gameState.gameStarted || gameState.gameOver) return;
 
-    const gameLoop = () => {
+    const gameLoop = (currentTime) => {
+      // DELTA TIME FIX: Calculate actual time elapsed since last frame
+      const deltaTime = (currentTime - lastFrameTimeRef.current) / 1000; // in seconds
+      lastFrameTimeRef.current = currentTime;
+
       setGameState(prevState => {
         if (prevState.gameOver) return prevState;
 
         const newState = { ...prevState };
         frameCountRef.current++;
 
-        // 1. Spawn beats (single or double)
-        if (frameCountRef.current % SPAWN_INTERVAL === 0) {
+        // 1. Spawn beats (single or double) - TIME-BASED
+        timeSinceLastBeatRef.current += deltaTime;
+        if (timeSinceLastBeatRef.current >= BEAT_INTERVAL_SECONDS) {
+          timeSinceLastBeatRef.current -= BEAT_INTERVAL_SECONDS;
           // Calculate double note chance (10% -> 30% over 60 seconds)
           const timeElapsed = TIME_LIMIT - newState.timeRemaining;
           const progressRatio = timeElapsed / TIME_LIMIT;
@@ -298,10 +309,10 @@ function Level2_MoulinRouge({ lives, onComplete, onLoseLife, onReturnToHub, onRe
           }
         }
 
-        // 2. Move beats down
+        // 2. Move beats down - TIME-BASED
         newState.beats = newState.beats.map(beat => ({
           ...beat,
-          y: beat.y + FALL_SPEED
+          y: beat.y + (FALL_SPEED_PER_SECOND * deltaTime)
         }));
 
         // 3. Remove beats that fell off screen AND detect misses
@@ -323,8 +334,10 @@ function Level2_MoulinRouge({ lives, onComplete, onLoseLife, onReturnToHub, onRe
           return beat.y < SCREEN_HEIGHT + 100; // Keep if still on screen
         });
 
-        // 4. Update timer (60 frames = 1 second)
-        if (frameCountRef.current % 60 === 0) {
+        // 4. Update timer - TIME-BASED
+        timeSinceLastSecondRef.current += deltaTime;
+        if (timeSinceLastSecondRef.current >= 1.0) {
+          timeSinceLastSecondRef.current -= 1.0;
           newState.timeRemaining = Math.max(0, newState.timeRemaining - 1);
         }
 
@@ -358,14 +371,14 @@ function Level2_MoulinRouge({ lives, onComplete, onLoseLife, onReturnToHub, onRe
       animationRef.current = requestAnimationFrame(gameLoop);
     };
 
-    gameLoop();
+    gameLoop(performance.now());
 
     return () => {
       if (animationRef.current) {
         cancelAnimationFrame(animationRef.current);
       }
     };
-  }, [gameState.gameStarted, gameState.gameOver, onComplete]);
+  }, [gameState.gameStarted, gameState.gameOver]);
 
   // ============ RENDERING ============
   useEffect(() => {
@@ -392,38 +405,28 @@ function Level2_MoulinRouge({ lives, onComplete, onLoseLife, onReturnToHub, onRe
         ctx.fillRect(0, 0, SCREEN_WIDTH, SCREEN_HEIGHT);
       }
 
-      // 2. Draw curtain at top
-      ctx.fillStyle = '#8B0000';
-      ctx.fillRect(0, 0, SCREEN_WIDTH, 80);
-
-      // Add curtain texture
-      ctx.strokeStyle = 'rgba(0, 0, 0, 0.2)';
-      ctx.lineWidth = 2;
-      for (let i = 0; i < SCREEN_WIDTH; i += 30) {
-        ctx.beginPath();
-        ctx.moveTo(i, 0);
-        ctx.lineTo(i, 80);
-        ctx.stroke();
-      }
-
-      // 3. Draw stage sparkles (decorative)
-      ctx.fillStyle = 'rgba(255, 215, 0, 0.3)';
-      for (let i = 0; i < 20; i++) {
+      // 2. Draw stage sparkles (decorative)
+      ctx.fillStyle = 'rgba(249, 243, 207, 0.5)';
+      ctx.shadowColor = '#FFD700';
+      ctx.shadowBlur = 8;
+      for (let i = 0; i < 30; i++) {
         const x = Math.random() * SCREEN_WIDTH;
-        const y = 80 + Math.random() * (SCREEN_HEIGHT - 180);
-        const size = 2 + Math.random() * 3;
+        const y = Math.random() * (SCREEN_HEIGHT - 100);
+        const size = 3 + Math.random() * 4;
         ctx.beginPath();
         ctx.arc(x, y, size, 0, Math.PI * 2);
         ctx.fill();
       }
+      // Reset shadow
+      ctx.shadowBlur = 0;
 
-      // 4. Draw lane guides
+      // 3. Draw lane guides
       gameState.lanes.forEach(lane => {
         ctx.strokeStyle = 'rgba(255, 255, 255, 0.1)';
         ctx.lineWidth = 2;
         ctx.beginPath();
-        ctx.moveTo(lane.x, 80);
-        ctx.lineTo(lane.x, SCREEN_HEIGHT - 80);
+        ctx.moveTo(lane.x, 0);
+        ctx.lineTo(lane.x, SCREEN_HEIGHT);
         ctx.stroke();
       });
 
@@ -526,6 +529,11 @@ function Level2_MoulinRouge({ lives, onComplete, onLoseLife, onReturnToHub, onRe
   const handleRetry = () => {
     onResetLives();
     frameCountRef.current = 0;
+
+    // Reset time tracking refs for delta time
+    lastFrameTimeRef.current = performance.now();
+    timeSinceLastSecondRef.current = 0;
+    timeSinceLastBeatRef.current = 0;
 
     // Reset music started flag
     setMusicStarted(false);

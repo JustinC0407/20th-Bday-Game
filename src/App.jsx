@@ -6,6 +6,7 @@ import LevelHub from './components/LevelHub';
 import GameShell from './components/GameShell';
 import Level1_Platformer from './components/Level1_Platformer';
 import Level2_MoulinRouge from './components/Level2_MoulinRouge';
+import Level3_PuzzleOfUs from './components/Level3_PuzzleOfUs';
 import MemoryCapsule from './components/MemoryCapsule';
 
 const TOTAL_LEVELS = 6;
@@ -198,6 +199,17 @@ function App() {
           <Level2_MoulinRouge
             lives={gameState.lives}
             onComplete={(memoryData) => completeLevel(2, memoryData)}
+            onLoseLife={loseLife}
+            onReturnToHub={returnToHub}
+            onResetLives={resetLives}
+          />
+        );
+
+      case 'level3':
+        return (
+          <Level3_PuzzleOfUs
+            lives={gameState.lives}
+            onComplete={(memoryData) => completeLevel(3, memoryData)}
             onLoseLife={loseLife}
             onReturnToHub={returnToHub}
             onResetLives={resetLives}

@@ -29,6 +29,7 @@ function Level3_PuzzleOfUs({ lives, onComplete, onLoseLife, onReturnToHub, onRes
   const canvasRef = useRef(null);
   const animationRef = useRef(null);
   const backgroundRef = useRef(null);
+  const backgroundImageRef = useRef(null); // Background scene image
   const lockSoundRef = useRef(null);
   const tilesRef = useRef([]);
   const tileCanvasesRef = useRef({});
@@ -172,6 +173,18 @@ function Level3_PuzzleOfUs({ lives, onComplete, onLoseLife, onReturnToHub, onRes
         lockSoundRef.current = null;
       }
     };
+  }, []);
+
+  // Load background image
+  useEffect(() => {
+    const bg = new Image();
+    bg.onload = () => {
+      backgroundImageRef.current = bg;
+    };
+    bg.onerror = () => {
+      console.warn('Failed to load background: /level_3.jpeg');
+    };
+    bg.src = '/level_3.jpeg';
   }, []);
 
   // Play lock sound
@@ -367,12 +380,23 @@ function Level3_PuzzleOfUs({ lives, onComplete, onLoseLife, onReturnToHub, onRes
     const render = () => {
       ctx.clearRect(0, 0, SCREEN_WIDTH, SCREEN_HEIGHT);
 
-      // Background gradient
-      const gradient = ctx.createLinearGradient(0, 0, 0, SCREEN_HEIGHT);
-      gradient.addColorStop(0, '#2C1810');
-      gradient.addColorStop(1, '#1A0F0A');
-      ctx.fillStyle = gradient;
-      ctx.fillRect(0, 0, SCREEN_WIDTH, SCREEN_HEIGHT);
+      // Draw background image or fallback gradient
+      if (backgroundImageRef.current) {
+        ctx.drawImage(backgroundImageRef.current, 0, 0, SCREEN_WIDTH, SCREEN_HEIGHT);
+      } else {
+        // Fallback gradient
+        const gradient = ctx.createLinearGradient(0, 0, 0, SCREEN_HEIGHT);
+        gradient.addColorStop(0, '#2C1810');
+        gradient.addColorStop(1, '#1A0F0A');
+        ctx.fillStyle = gradient;
+        ctx.fillRect(0, 0, SCREEN_WIDTH, SCREEN_HEIGHT);
+      }
+
+      // Add white semi-transparent overlay on puzzle grid area
+      if (gameState.gameStarted) {
+        ctx.fillStyle = 'rgba(255, 255, 255, 0.15)';
+        ctx.fillRect(GRID_ORIGIN.x, GRID_ORIGIN.y, PUZZLE_SIZE, PUZZLE_SIZE);
+      }
 
       // Draw grid overlay
       if (!gameState.levelCompleted && gameState.gameStarted) {
