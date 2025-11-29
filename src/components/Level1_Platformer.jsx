@@ -128,10 +128,10 @@ function Level1_Platformer({ lives, onComplete, onLoseLife, onReturnToHub, onRes
     const platforms = [
       // Section 1 (0-33%): Starting area with ground-level progression
       { x: 0, y: LEVEL_HEIGHT - 120, width: LEVEL_WIDTH * 0.18, height: 60 }, // Starting ground platform
-      { x: LEVEL_WIDTH * 0.22, y: LEVEL_HEIGHT - 140, width: LEVEL_WIDTH * 0.08, height: 40 }, // Small step up
+      { x: LEVEL_WIDTH * 0.22, y: LEVEL_HEIGHT - 120, width: LEVEL_WIDTH * 0.08, height: 40 }, // Small step up
       { x: LEVEL_WIDTH * 0.25, y: LEVEL_HEIGHT - 240, width: LEVEL_WIDTH * 0.08, height: 30 }, // Higher platform
       { x: LEVEL_WIDTH * 0.18, y: LEVEL_HEIGHT - 320, width: LEVEL_WIDTH * 0.06, height: 30 }, // Upper level access
-      { x: LEVEL_WIDTH * 0.12, y: LEVEL_HEIGHT - 240, width: LEVEL_WIDTH * 0.05, height: 30 }, // Return path
+      { x: LEVEL_WIDTH * 0.09, y: LEVEL_HEIGHT - 240, width: LEVEL_WIDTH * 0.05, height: 30 }, // Return path
       
       // Checkpoint 1 platform - safe and accessible
       { x: LEVEL_WIDTH * 0.32, y: LEVEL_HEIGHT - 160, width: LEVEL_WIDTH * 0.08, height: 40 }, // Checkpoint 1 platform
@@ -292,6 +292,16 @@ function Level1_Platformer({ lives, onComplete, onLoseLife, onReturnToHub, onRes
     
     return { x: clampedCameraX, y: 0 };
   };
+
+  // ======= DEBUG FUNCTION - EASY TO REMOVE =======
+  const debugCollectAllHearts = () => {
+    setGameState(prevState => ({
+      ...prevState,
+      heartsCollected: TOTAL_HEARTS
+    }));
+    console.log('DEBUG: Collected all hearts instantly!');
+  };
+  // ======= END DEBUG FUNCTION =======
 
   // Game over detection - check when lives reach 0
   useEffect(() => {
@@ -768,10 +778,50 @@ function Level1_Platformer({ lives, onComplete, onLoseLife, onReturnToHub, onRes
           <span className="checkpoint-icon">🚩</span>
           Checkpoint: {gameState.checkpoints.filter(c => c.activated).length}/2
         </div>
-        <button className="return-button" onClick={onReturnToHub}>
-          Return to Hub
-        </button>
+        {/* ======= DEBUG BUTTON - EASY TO REMOVE ======= */}
+        {!gameState.levelCompleted && (
+          <button 
+            className="debug-button" 
+            onClick={debugCollectAllHearts}
+            style={{
+              backgroundColor: '#ff4444',
+              color: 'white',
+              border: '2px solid #cc0000',
+              padding: '8px 12px',
+              fontSize: '12px',
+              borderRadius: '4px',
+              cursor: 'pointer',
+              fontFamily: 'monospace',
+              fontWeight: 'bold'
+            }}
+          >
+            🐛 DEBUG: Collect All Hearts
+          </button>
+        )}
+        {/* ======= END DEBUG BUTTON ======= */}
       </div>
+
+      {/* Return to Hub Button - Bottom Right */}
+      <button
+        onClick={onReturnToHub}
+        style={{
+          position: 'absolute',
+          bottom: '20px',
+          right: '20px',
+          padding: '12px 24px',
+          fontSize: '12px',
+          fontFamily: '"Press Start 2P", monospace',
+          background: '#8B4513',
+          color: '#fff',
+          border: '3px solid #fff',
+          borderRadius: '8px',
+          cursor: 'pointer',
+          boxShadow: '0 4px 8px rgba(0,0,0,0.3)',
+          zIndex: 999
+        }}
+      >
+        Return to Hub
+      </button>
 
       {/* Level completion overlay */}
       {gameState.levelCompleted && (

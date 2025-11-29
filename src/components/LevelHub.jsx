@@ -3,6 +3,9 @@ import { useState, useRef, useEffect } from 'react';
 
 function LevelHub({ gameState, onStartLevel, onOpenMemoryRoom, onResetGame }) {
   const [showResetConfirm, setShowResetConfirm] = useState(false);
+  // ======= DEBUG MODE - EASY TO REMOVE =======
+  const [debugUnlockAll, setDebugUnlockAll] = useState(false);
+  // ======= END DEBUG MODE =======
   const [character, setCharacter] = useState({
     x: window.innerWidth / 2,
     y: window.innerHeight / 2,
@@ -64,6 +67,9 @@ function LevelHub({ gameState, onStartLevel, onOpenMemoryRoom, onResetGame }) {
 
   // Check if a level is available to play
   const isLevelAvailable = (levelNumber) => {
+    // ======= DEBUG MODE - EASY TO REMOVE =======
+    if (debugUnlockAll) return true; // All levels unlocked in debug mode
+    // ======= END DEBUG MODE =======
     if (levelNumber === 1) return true; // First level always available
     return completedLevels.includes(levelNumber - 1); // Previous level must be completed
   };
@@ -452,13 +458,38 @@ function LevelHub({ gameState, onStartLevel, onOpenMemoryRoom, onResetGame }) {
       {/* Game Options */}
       <div className="game-options">
         {!showResetConfirm ? (
-          <button 
-            className="reset-button" 
-            onClick={() => setShowResetConfirm(true)}
-            title="Reset all progress and start over"
-          >
-            🔄 Reset
-          </button>
+          <>
+            <button
+              className="reset-button"
+              onClick={() => setShowResetConfirm(true)}
+              title="Reset all progress and start over"
+            >
+              🔄 Reset
+            </button>
+            {/* ======= DEBUG BUTTON - EASY TO REMOVE ======= */}
+            <button
+              onClick={() => setDebugUnlockAll(!debugUnlockAll)}
+              style={{
+                position: 'absolute',
+                bottom: '20px',
+                right: '20px',
+                padding: '12px 20px',
+                fontSize: '12px',
+                fontFamily: '"Press Start 2P", monospace',
+                background: debugUnlockAll ? '#00FF00' : '#FF0000',
+                color: '#fff',
+                border: '3px solid #fff',
+                borderRadius: '8px',
+                cursor: 'pointer',
+                boxShadow: '0 4px 8px rgba(0,0,0,0.3)',
+                zIndex: 1000
+              }}
+              title="Toggle debug mode to unlock all levels"
+            >
+              🐛 {debugUnlockAll ? 'DEBUG: ON' : 'DEBUG: OFF'}
+            </button>
+            {/* ======= END DEBUG BUTTON ======= */}
+          </>
         ) : (
           <div className="reset-confirm">
             <p>Reset all progress?</p>
