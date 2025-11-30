@@ -7,6 +7,8 @@ import GameShell from './components/GameShell';
 import Level1_Platformer from './components/Level1_Platformer';
 import Level2_MoulinRouge from './components/Level2_MoulinRouge';
 import Level3_PuzzleOfUs from './components/Level3_PuzzleOfUs';
+import Level4_StarCollect from './components/Level4_StarCollect';
+import Level5_BossFight from './components/Level5_BossFight';
 import MemoryCapsule from './components/MemoryCapsule';
 
 const TOTAL_LEVELS = 6;
@@ -216,6 +218,28 @@ function App() {
           />
         );
 
+      case 'level4':
+        return (
+          <Level4_StarCollect
+            lives={gameState.lives}
+            onComplete={(memoryData) => completeLevel(4, memoryData)}
+            onLoseLife={loseLife}
+            onReturnToHub={returnToHub}
+            onResetLives={resetLives}
+          />
+        );
+
+      case 'level5':
+        return (
+          <Level5_BossFight
+            lives={gameState.lives}
+            onComplete={(memoryData) => completeLevel(5, memoryData)}
+            onLoseLife={loseLife}
+            onReturnToHub={returnToHub}
+            onResetLives={resetLives}
+          />
+        );
+
       case 'memory':
         return (
           <MemoryCapsule
@@ -249,10 +273,11 @@ function App() {
       {renderCurrentScreen()}
       
       {/* Global Progress Bar */}
-      <GameShell 
+      <GameShell
         progress={gameState.progress}
         lives={gameState.lives}
         showProgressBar={gameState.currentScreen !== 'hub'}
+        showLives={gameState.currentScreen !== 'level3'}
       />
     </div>
   );
