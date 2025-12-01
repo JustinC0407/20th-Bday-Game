@@ -31,6 +31,7 @@ function Level3_PuzzleOfUs({ lives, onComplete, onLoseLife, onReturnToHub, onRes
   const backgroundRef = useRef(null);
   const backgroundImageRef = useRef(null); // Background scene image
   const lockSoundRef = useRef(null);
+  const backgroundMusicRef = useRef(null);
   const tilesRef = useRef([]);
   const tileCanvasesRef = useRef({});
 
@@ -175,6 +176,33 @@ function Level3_PuzzleOfUs({ lives, onComplete, onLoseLife, onReturnToHub, onRes
     };
   }, []);
 
+  // Initialize background music
+  useEffect(() => {
+    const audio = new Audio('/src/assets/audio/level_3.mp3');
+    audio.loop = true;
+    audio.volume = 0.3; // 30% volume (quiet, thinking atmosphere)
+    audio.preload = 'auto';
+
+    backgroundMusicRef.current = audio;
+
+    return () => {
+      if (backgroundMusicRef.current) {
+        backgroundMusicRef.current.pause();
+        backgroundMusicRef.current.currentTime = 0;
+        backgroundMusicRef.current = null;
+      }
+    };
+  }, []);
+
+  // Start background music when puzzle begins
+  useEffect(() => {
+    if (gameState.gameStarted && !gameState.levelCompleted && backgroundMusicRef.current) {
+      backgroundMusicRef.current.play().catch(err => {
+        console.warn('Background music playback failed:', err);
+      });
+    }
+  }, [gameState.gameStarted]);
+
   // Load background image
   useEffect(() => {
     const bg = new Image();
@@ -194,6 +222,33 @@ function Level3_PuzzleOfUs({ lives, onComplete, onLoseLife, onReturnToHub, onRes
       lockSoundRef.current.play().catch(e => console.warn('Audio play failed:', e));
     }
   };
+
+  const fadeOutMusic = () => {
+    if (!backgroundMusicRef.current) return;
+
+    const audio = backgroundMusicRef.current;
+    const fadeDuration = 1500; // 1.5 seconds
+    const fadeInterval = 50; // Update every 50ms
+    const steps = fadeDuration / fadeInterval;
+    const volumeStep = audio.volume / steps;
+
+    const fadeTimer = setInterval(() => {
+      if (audio.volume > volumeStep) {
+        audio.volume = Math.max(0, audio.volume - volumeStep);
+      } else {
+        audio.volume = 0;
+        audio.pause();
+        clearInterval(fadeTimer);
+      }
+    }, fadeInterval);
+  };
+
+  // Fade out music when puzzle is completed
+  useEffect(() => {
+    if (gameState.levelCompleted && backgroundMusicRef.current) {
+      fadeOutMusic();
+    }
+  }, [gameState.levelCompleted]);
 
   // Trigger particle effect
   const triggerParticleEffect = (x, y) => {

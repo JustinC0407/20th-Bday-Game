@@ -59,6 +59,27 @@ function Level5_BossFight({ lives, onComplete, onLoseLife, onReturnToHub, onRese
     runRight1: null, runRight2: null, runRight3: null
   });
 
+  // Background Image Refs
+  const backgroundDayRef = useRef(null);
+  const backgroundNightRef = useRef(null);
+  const roadOverlayRef = useRef(null);
+
+  // Hazard Image Refs
+  const birdImageRef = useRef(null);
+  const carLeftImageRef = useRef(null);
+  const carRightImageRef = useRef(null);
+
+  // Boss Image Refs
+  const bossPhase1ImageRef = useRef(null);
+  const bossPhase2ImageRef = useRef(null);
+  const bossDeadImageRef = useRef(null);
+
+  // Audio Refs
+  const backgroundMusicRef = useRef(null);
+  const attackSoundRef = useRef(null);
+  const birdSoundRef = useRef(null);
+  const carSoundRef = useRef(null);
+
   // Animation State
   const [animationState, setAnimationState] = useState('idle');
   const [animationFrame, setAnimationFrame] = useState(0);
@@ -96,6 +117,114 @@ function Level5_BossFight({ lives, onComplete, onLoseLife, onReturnToHub, onRese
       runRight3: loadImg('/src/assets/sprites/runright3.png')
     };
   }, []);
+
+  // Load background images
+  useEffect(() => {
+    // Day background
+    const dayBg = new Image();
+    dayBg.onload = () => { backgroundDayRef.current = dayBg; };
+    dayBg.onerror = () => { console.warn('Failed to load /level_5_day.png'); };
+    dayBg.src = '/level_5_day.png';
+
+    // Night background
+    const nightBg = new Image();
+    nightBg.onload = () => { backgroundNightRef.current = nightBg; };
+    nightBg.onerror = () => { console.warn('Failed to load /level_5_night.png'); };
+    nightBg.src = '/level_5_night.png';
+
+    // Road overlay
+    const road = new Image();
+    road.onload = () => { roadOverlayRef.current = road; };
+    road.onerror = () => { console.warn('Failed to load road overlay'); };
+    road.src = '/level_5_road.png';
+  }, []);
+
+  // Load hazard images
+  useEffect(() => {
+    // Bird image
+    const bird = new Image();
+    bird.onload = () => { birdImageRef.current = bird; };
+    bird.onerror = () => { console.warn('Failed to load bird image'); };
+    bird.src = '/src/assets/photos/level_5_bird.png';
+
+    // Car left image
+    const carLeft = new Image();
+    carLeft.onload = () => { carLeftImageRef.current = carLeft; };
+    carLeft.onerror = () => { console.warn('Failed to load car left image'); };
+    carLeft.src = '/src/assets/photos/level_5_car_face_left.png';
+
+    // Car right image
+    const carRight = new Image();
+    carRight.onload = () => { carRightImageRef.current = carRight; };
+    carRight.onerror = () => { console.warn('Failed to load car right image'); };
+    carRight.src = '/src/assets/photos/level_5_car_face_right.png';
+  }, []);
+
+  // Load boss images
+  useEffect(() => {
+    // Boss Phase 1 image
+    const bossPhase1 = new Image();
+    bossPhase1.onload = () => { bossPhase1ImageRef.current = bossPhase1; };
+    bossPhase1.onerror = () => { console.warn('Failed to load boss phase 1 image'); };
+    bossPhase1.src = '/src/assets/photos/level_5_boss_phase_1.png';
+
+    // Boss Phase 2 image
+    const bossPhase2 = new Image();
+    bossPhase2.onload = () => { bossPhase2ImageRef.current = bossPhase2; };
+    bossPhase2.onerror = () => { console.warn('Failed to load boss phase 2 image'); };
+    bossPhase2.src = '/src/assets/photos/level_5_boss_phase_2.png';
+
+    // Boss Dead image
+    const bossDead = new Image();
+    bossDead.onload = () => { bossDeadImageRef.current = bossDead; };
+    bossDead.onerror = () => { console.warn('Failed to load boss dead image'); };
+    bossDead.src = '/src/assets/photos/level_5_boss_dead.png';
+  }, []);
+
+  // Load audio files
+  useEffect(() => {
+    // Background music
+    const bgMusic = new Audio('/src/assets/audio/level_5.mp3');
+    bgMusic.loop = true;
+    bgMusic.volume = 0.3; // 30% volume (like Level 1 platformer)
+    bgMusic.preload = 'auto';
+    backgroundMusicRef.current = bgMusic;
+
+    // Attack sound
+    const attackSound = new Audio('/src/assets/audio/level_5_attack.mp3');
+    attackSound.volume = 0.5; // 50% volume
+    attackSound.preload = 'auto';
+    attackSoundRef.current = attackSound;
+
+    // Bird spawn sound
+    const birdSound = new Audio('/src/assets/audio/level_5_bird.mp3');
+    birdSound.volume = 0.4; // 40% volume
+    birdSound.preload = 'auto';
+    birdSoundRef.current = birdSound;
+
+    // Car spawn sound
+    const carSound = new Audio('/src/assets/audio/level_5_car.mp3');
+    carSound.volume = 0.5; // 50% volume
+    carSound.preload = 'auto';
+    carSoundRef.current = carSound;
+
+    return () => {
+      // Cleanup all audio on unmount
+      if (backgroundMusicRef.current) {
+        backgroundMusicRef.current.pause();
+        backgroundMusicRef.current = null;
+      }
+    };
+  }, []);
+
+  // Start background music when game begins
+  useEffect(() => {
+    if (gameState.gameStarted && !gameState.gameOver && !gameState.levelCompleted && backgroundMusicRef.current) {
+      backgroundMusicRef.current.play().catch(err => {
+        console.warn('Background music playback failed:', err);
+      });
+    }
+  }, [gameState.gameStarted, gameState.gameOver, gameState.levelCompleted]);
 
   // Sync animation refs to state for rendering
   useEffect(() => {
@@ -172,6 +301,33 @@ function Level5_BossFight({ lives, onComplete, onLoseLife, onReturnToHub, onRese
     onReturnToHub();
   };
 
+  const fadeOutMusic = () => {
+    if (!backgroundMusicRef.current) return;
+
+    const audio = backgroundMusicRef.current;
+    const fadeDuration = 1500; // 1.5 seconds
+    const fadeInterval = 50; // Update every 50ms
+    const steps = fadeDuration / fadeInterval;
+    const volumeStep = audio.volume / steps;
+
+    const fadeTimer = setInterval(() => {
+      if (audio.volume > volumeStep) {
+        audio.volume = Math.max(0, audio.volume - volumeStep);
+      } else {
+        audio.volume = 0;
+        audio.pause();
+        clearInterval(fadeTimer);
+      }
+    }, fadeInterval);
+  };
+
+  // Fade out music when level completes or player loses
+  useEffect(() => {
+    if ((gameState.levelCompleted || gameState.gameOver) && backgroundMusicRef.current) {
+      fadeOutMusic();
+    }
+  }, [gameState.levelCompleted, gameState.gameOver]);
+
   // ============ SPAWN LOGIC (WITH SAFETY LOCK RESTORED) ============
   const spawnAttack = (currentPhase, currentHazards) => {
     const attacks = [];
@@ -184,21 +340,27 @@ function Level5_BossFight({ lives, onComplete, onLoseLife, onReturnToHub, onRese
     let rand = isGroundBlocked ? 0.6 : Math.random();
     
     // --- ATTACK 1: TAXI DASH ---
-    if (rand < 0.5) { 
+    if (rand < 0.5) {
       const speed = currentPhase === 1 ? 350 : 450;
-      const count = currentPhase === 1 ? 1 : 2; 
+      const count = currentPhase === 1 ? 1 : 2;
       const batchLane = Math.random() > 0.5 ? 1 : 2;
       const fromLeft = Math.random() > 0.5;
       const yPos = batchLane === 1 ? LANE_BOTTOM_Y + 20 : LANE_TOP_Y + 20;
 
       for(let i=0; i<count; i++) {
-        const offsetX = i * 250; 
+        const offsetX = i * 250;
         attacks.push({
-          type: 'taxi', lane: batchLane, 
+          type: 'taxi', lane: batchLane,
           x: fromLeft ? -150 - offsetX : SCREEN_WIDTH + 150 + offsetX,
           y: yPos, w: 100, h: 40, vx: fromLeft ? speed : -speed, vy: 0,
           spawnTimer: 1.5, spawnSide: fromLeft ? 'left' : 'right'
         });
+      }
+
+      // Play car sound (once per spawn event, not per taxi)
+      if (carSoundRef.current) {
+        carSoundRef.current.currentTime = 0;
+        carSoundRef.current.play().catch(err => console.warn('Car sound failed:', err));
       }
     } 
     // --- ATTACK 2: PIGEON SWOOP ---
@@ -206,10 +368,16 @@ function Level5_BossFight({ lives, onComplete, onLoseLife, onReturnToHub, onRese
       const count = currentPhase === 1 ? 2 : 3;
       for(let i=0; i<count; i++) {
         attacks.push({
-          type: 'pigeon', lane: 0, 
+          type: 'pigeon', lane: 0,
           x: Math.random() * SCREEN_WIDTH, y: -50 - (Math.random() * 200),
-          w: 30, h: 30, vx: (Math.random()-0.5)*200, vy: currentPhase === 1 ? 200 : 300 
+          w: 30, h: 30, vx: (Math.random()-0.5)*200, vy: currentPhase === 1 ? 200 : 300
         });
+      }
+
+      // Play bird sound (once per spawn event, not per bird)
+      if (birdSoundRef.current) {
+        birdSoundRef.current.currentTime = 0;
+        birdSoundRef.current.play().catch(err => console.warn('Bird sound failed:', err));
       }
     }
     // --- ATTACK 3: SHOCKWAVE ---
@@ -261,6 +429,12 @@ function Level5_BossFight({ lives, onComplete, onLoseLife, onReturnToHub, onRese
             x: next.player.x + PLAYER_SIZE.w/2 - PROJECTILE_SIZE.w/2, y: next.player.y,
             w: PROJECTILE_SIZE.w, h: PROJECTILE_SIZE.h, active: true
           });
+
+          // Play attack sound (allow overlapping)
+          if (attackSoundRef.current) {
+            const attackClone = attackSoundRef.current.cloneNode();
+            attackClone.play().catch(err => console.warn('Attack sound failed:', err));
+          }
         }
 
         // --- BOSS ---
@@ -270,8 +444,8 @@ function Level5_BossFight({ lives, onComplete, onLoseLife, onReturnToHub, onRese
 
         if (next.boss.health <= 0) {
             next.levelCompleted = true; next.boss.health = 0;
-            setTimeout(() => { onComplete({ title: "Chaos Subsided", type: "text", content: "NYC is crazy, but we conquered it together!" }); }, 1000);
-            return next; 
+            setTimeout(() => { onComplete({ title: "Chaos Subsided", type: "text", content: "NYC is crazy, but we conquered it together!" }); }, 2500);
+            return next;
         }
 
         // --- SPAWNING ---
@@ -359,9 +533,15 @@ function Level5_BossFight({ lives, onComplete, onLoseLife, onReturnToHub, onRese
     const ctx = canvas.getContext('2d');
     ctx.imageSmoothingEnabled = false;
 
-    // Background
-    ctx.fillStyle = gameState.phase === 1 ? COLORS.skyPhase1 : COLORS.skyPhase2;
-    ctx.fillRect(0, 0, SCREEN_WIDTH, SCREEN_HEIGHT);
+    // Background image based on phase
+    const bgImage = gameState.phase === 1 ? backgroundDayRef.current : backgroundNightRef.current;
+    if (bgImage && bgImage.complete) {
+      ctx.drawImage(bgImage, 0, 0, SCREEN_WIDTH, SCREEN_HEIGHT);
+    } else {
+      // Fallback: solid color fill if image not loaded
+      ctx.fillStyle = gameState.phase === 1 ? COLORS.skyPhase1 : COLORS.skyPhase2;
+      ctx.fillRect(0, 0, SCREEN_WIDTH, SCREEN_HEIGHT);
+    }
     ctx.fillStyle = gameState.phase === 1 ? '#555' : '#222';
     ctx.fillRect(50, SCREEN_HEIGHT - 400, 100, 240);
     ctx.fillRect(200, SCREEN_HEIGHT - 500, 150, 340);
@@ -371,18 +551,45 @@ function Level5_BossFight({ lives, onComplete, onLoseLife, onReturnToHub, onRese
     ctx.fillStyle = '#444'; ctx.fillRect(0, LANE_TOP_Y, SCREEN_WIDTH, LANE_HEIGHT);
     ctx.fillStyle = COLORS.laneDivider; for(let i=0; i<SCREEN_WIDTH; i+=100) ctx.fillRect(i, LANE_BOTTOM_Y - 2, 50, 4);
     ctx.fillStyle = '#444'; ctx.fillRect(0, LANE_BOTTOM_Y, SCREEN_WIDTH, LANE_HEIGHT);
-    
+
+    // Road overlay texture
+    if (roadOverlayRef.current && roadOverlayRef.current.complete) {
+      // Draw road overlay covering both lanes
+      const roadStartY = LANE_TOP_Y;
+      const roadHeight = (LANE_BOTTOM_Y + LANE_HEIGHT) - LANE_TOP_Y;
+      ctx.drawImage(roadOverlayRef.current, 0, roadStartY, SCREEN_WIDTH, roadHeight);
+    }
+
     // Labels
     ctx.fillStyle = 'rgba(255,255,255,0.2)'; ctx.font = '16px monospace';
     ctx.fillText("LANE 2 (UP)", 20, LANE_TOP_Y + 45); ctx.fillText("LANE 1 (DOWN)", 20, LANE_BOTTOM_Y + 45);
 
-    // Boss
-    ctx.fillStyle = gameState.phase === 1 ? COLORS.bossPhase1 : COLORS.bossPhase2;
-    ctx.fillRect(gameState.boss.x, gameState.boss.y, BOSS_SIZE.w, BOSS_SIZE.h);
-    ctx.fillStyle = '#FFF'; ctx.beginPath();
-    ctx.arc(gameState.boss.x + 50, gameState.boss.y + 50, 20, 0, Math.PI * 2);
-    ctx.arc(gameState.boss.x + 150, gameState.boss.y + 50, 20, 0, Math.PI * 2); ctx.fill();
-    
+    // Boss - select image based on state
+    let bossImage;
+    if (gameState.levelCompleted) {
+      // Player won - boss is dead
+      bossImage = bossDeadImageRef.current;
+    } else if (gameState.phase === 1) {
+      // Phase 1 - health > 50%
+      bossImage = bossPhase1ImageRef.current;
+    } else {
+      // Phase 2 - health ≤ 50%
+      bossImage = bossPhase2ImageRef.current;
+    }
+
+    if (bossImage && bossImage.complete) {
+      // Draw boss image
+      ctx.drawImage(bossImage, gameState.boss.x, gameState.boss.y, BOSS_SIZE.w, BOSS_SIZE.h);
+    } else {
+      // Fallback: colored rectangle with eyes
+      ctx.fillStyle = gameState.phase === 1 ? COLORS.bossPhase1 : COLORS.bossPhase2;
+      ctx.fillRect(gameState.boss.x, gameState.boss.y, BOSS_SIZE.w, BOSS_SIZE.h);
+      ctx.fillStyle = '#FFF'; ctx.beginPath();
+      ctx.arc(gameState.boss.x + 50, gameState.boss.y + 50, 20, 0, Math.PI * 2);
+      ctx.arc(gameState.boss.x + 150, gameState.boss.y + 50, 20, 0, Math.PI * 2);
+      ctx.fill();
+    }
+
     // Health
     ctx.fillStyle = '#333'; ctx.fillRect(gameState.boss.x, gameState.boss.y - 20, BOSS_SIZE.w, 10);
     ctx.fillStyle = '#FF0000'; ctx.fillRect(gameState.boss.x, gameState.boss.y - 20, BOSS_SIZE.w * (gameState.boss.health/BOSS_MAX_HEALTH), 10);
@@ -396,15 +603,35 @@ function Level5_BossFight({ lives, onComplete, onLoseLife, onReturnToHub, onRese
             ctx.fillRect(warnX, h.y, 40, 40);
             ctx.fillStyle = '#FFF'; ctx.font = '30px monospace'; ctx.fillText("!", warnX + 12, h.y + 30);
         } else {
-            ctx.fillStyle = COLORS.taxi; ctx.fillRect(h.x, h.y, h.w, h.h);
-            ctx.fillStyle = '#FFF'; h.vx > 0 ? ctx.fillRect(h.x+h.w-10, h.y+5, 10, 10) : ctx.fillRect(h.x, h.y+5, 10, 10);
+            // Select car image based on direction
+            const carImage = h.vx > 0 ? carRightImageRef.current : carLeftImageRef.current;
+
+            if (carImage && carImage.complete) {
+              // Draw directional car image 1.5x larger, centered at same position
+              ctx.drawImage(carImage, h.x - h.w*0.25, h.y - h.h*0.25, h.w*1.5, h.h*1.5);
+            } else {
+              // Fallback: yellow rectangle with headlight
+              ctx.fillStyle = COLORS.taxi;
+              ctx.fillRect(h.x, h.y, h.w, h.h);
+              ctx.fillStyle = '#FFF';
+              h.vx > 0 ? ctx.fillRect(h.x+h.w-10, h.y+5, 10, 10) : ctx.fillRect(h.x, h.y+5, 10, 10);
+            }
         }
       } else if (h.type === 'shockwave') {
         ctx.fillStyle = h.warning > 0 ? COLORS.shockwaveWarn : COLORS.shockwaveActive;
         ctx.fillRect(h.x, h.y, h.w, h.h);
         if (h.warning > 0) { ctx.fillStyle = '#FFF'; ctx.font = '20px monospace'; ctx.fillText("!!! MOVE !!!", SCREEN_WIDTH/2 - 50, h.y + 45); }
       } else if (h.type === 'pigeon') {
-        ctx.fillStyle = COLORS.pigeon; ctx.beginPath(); ctx.arc(h.x, h.y, h.w/2, 0, Math.PI*2); ctx.fill();
+        if (birdImageRef.current && birdImageRef.current.complete) {
+          // Draw bird image 1.5x larger, centered at pigeon position
+          ctx.drawImage(birdImageRef.current, h.x - (h.w*1.5)/2, h.y - (h.h*1.5)/2, h.w*1.5, h.h*1.5);
+        } else {
+          // Fallback: gray circle
+          ctx.fillStyle = COLORS.pigeon;
+          ctx.beginPath();
+          ctx.arc(h.x, h.y, h.w/2, 0, Math.PI*2);
+          ctx.fill();
+        }
       }
     });
 

@@ -29,6 +29,8 @@ const VERTICAL_SAFE_ZONE = 150;
 function Level4_StarCollect({ lives, onComplete, onLoseLife, onReturnToHub, onResetLives }) {
   const canvasRef = useRef(null);
   const animationRef = useRef(null);
+  const backgroundMusicRef = useRef(null);
+  const backgroundRef = useRef(null);
   const keysRef = useRef({});
 
   // Timestamp-based timing
@@ -133,6 +135,37 @@ function Level4_StarCollect({ lives, onComplete, onLoseLife, onReturnToHub, onRe
       };
       img.src = src;
     });
+  }, []);
+
+  // Load background image
+  useEffect(() => {
+    const bg = new Image();
+    bg.onload = () => { backgroundRef.current = bg; };
+    bg.onerror = () => { console.warn('Failed to load /level_4.png'); };
+    bg.src = '/level_4.png';
+  }, []);
+
+  // Initialize background music
+  useEffect(() => {
+    const audio = new Audio('/src/assets/audio/level_4.mp3');
+    audio.loop = true;
+    audio.volume = 0.4; // 40% volume (upbeat but not overpowering)
+    audio.preload = 'auto';
+
+    backgroundMusicRef.current = audio;
+
+    // Start playing immediately since gameStarted is always true
+    audio.play().catch(err => {
+      console.warn('Background music playback failed:', err);
+    });
+
+    return () => {
+      if (backgroundMusicRef.current) {
+        backgroundMusicRef.current.pause();
+        backgroundMusicRef.current.currentTime = 0;
+        backgroundMusicRef.current = null;
+      }
+    };
   }, []);
 
   // ============ HELPER FUNCTIONS ============
@@ -389,8 +422,13 @@ function Level4_StarCollect({ lives, onComplete, onLoseLife, onReturnToHub, onRe
     ctx.clearRect(0, 0, SCREEN_WIDTH, SCREEN_HEIGHT);
 
     // Background
-    ctx.fillStyle = '#87CEEB';
-    ctx.fillRect(0, 0, SCREEN_WIDTH, SCREEN_HEIGHT);
+    if (backgroundRef.current && backgroundRef.current.complete) {
+      ctx.drawImage(backgroundRef.current, 0, 0, SCREEN_WIDTH, SCREEN_HEIGHT);
+    } else {
+      // Fallback: sky blue
+      ctx.fillStyle = '#87CEEB';
+      ctx.fillRect(0, 0, SCREEN_WIDTH, SCREEN_HEIGHT);
+    }
 
     // Platform
     ctx.fillStyle = '#8B4513';
@@ -467,6 +505,17 @@ function Level4_StarCollect({ lives, onComplete, onLoseLife, onReturnToHub, onRe
   // ============ CONTROLS ============
   const handleRetry = () => {
     onResetLives();
+
+    // Reset and restart music
+    if (backgroundMusicRef.current) {
+      backgroundMusicRef.current.pause();
+      backgroundMusicRef.current.currentTime = 0;
+      backgroundMusicRef.current.volume = 0.4; // Reset volume to 40%
+      backgroundMusicRef.current.play().catch(err => {
+        console.warn('Music restart failed:', err);
+      });
+    }
+
     lastFrameTimeRef.current = performance.now();
     timeSinceLastStarRef.current = 0;
     timeSinceLastObstacleRef.current = 0;
@@ -495,6 +544,33 @@ function Level4_StarCollect({ lives, onComplete, onLoseLife, onReturnToHub, onRe
   };
 
   const handleReturnToHub = () => onReturnToHub();
+
+  const fadeOutMusic = () => {
+    if (!backgroundMusicRef.current) return;
+
+    const audio = backgroundMusicRef.current;
+    const fadeDuration = 1500; // 1.5 seconds
+    const fadeInterval = 50; // Update every 50ms
+    const steps = fadeDuration / fadeInterval;
+    const volumeStep = audio.volume / steps;
+
+    const fadeTimer = setInterval(() => {
+      if (audio.volume > volumeStep) {
+        audio.volume = Math.max(0, audio.volume - volumeStep);
+      } else {
+        audio.volume = 0;
+        audio.pause();
+        clearInterval(fadeTimer);
+      }
+    }, fadeInterval);
+  };
+
+  // Fade out music when level completes or player loses
+  useEffect(() => {
+    if ((gameState.levelCompleted || gameState.gameOver) && backgroundMusicRef.current) {
+      fadeOutMusic();
+    }
+  }, [gameState.levelCompleted, gameState.gameOver]);
 
   const debugWin = () => {
     starsSpawnedRef.current = TOTAL_STARS;
