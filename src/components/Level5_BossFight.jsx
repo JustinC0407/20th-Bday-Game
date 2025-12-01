@@ -5,28 +5,41 @@ const SCREEN_WIDTH = window.innerWidth;
 const SCREEN_HEIGHT = window.innerHeight;
 
 // Game Settings
-const PLAYER_SPEED = 400; // Pixels per second
-const PROJECTILE_SPEED = 600;
-const FIRE_RATE = 250; // ms between shots
+const PLAYER_SPEED = 375; // 3/4 of original speed (500 * 0.75) 
+const PROJECTILE_SPEED = 700;
+const FIRE_RATE = 200; 
 const BOSS_MAX_HEALTH = 50;
 
-// Dimensions
-const PLAYER_SIZE = { w: 40, h: 40 };
+// Lane Settings
+const LANE_HEIGHT = 80;
+const LANE_BOTTOM_Y = SCREEN_HEIGHT - 80; 
+const LANE_TOP_Y = SCREEN_HEIGHT - 160;   
+
+// LOGICAL HITBOX (Physics)
+const PLAYER_SIZE = { w: 50, h: 50 }; 
+// VISUAL SPRITE (Drawing)
+const SPRITE_SIZE = 80; 
+const SPRITE_OFFSET_X = (PLAYER_SIZE.w - SPRITE_SIZE) / 2; // Center horizontally
+const SPRITE_OFFSET_Y = PLAYER_SIZE.h - SPRITE_SIZE + 10;  // Align feet
+
 const BOSS_SIZE = { w: 200, h: 150 };
 const PROJECTILE_SIZE = { w: 10, h: 20 };
 
 // Colors
 const COLORS = {
-  skyPhase1: '#FFD700', // Sunset Yellow
-  skyPhase2: '#191970', // Midnight Blue
-  player: '#00FF00',    // Green (Boyfriend)
-  bossPhase1: '#FFA500', // Orange Taxi color
-  bossPhase2: '#FF4500', // Angry Red/Orange
+  skyPhase1: '#FFD700', 
+  skyPhase2: '#191970', 
+  road: '#333333',
+  laneDivider: '#FFFF00',
+  player: '#00FF00',    
+  bossPhase1: '#FFA500', 
+  bossPhase2: '#FF4500', 
   taxi: '#FFFF00',
   pigeon: '#A9A9A9',
   shockwaveWarn: 'rgba(255, 0, 0, 0.3)',
   shockwaveActive: '#FF0000',
-  projectile: '#FF69B4' // Hot Pink Love Bolts
+  projectile: '#FF69B4', 
+  warningSign: '#FF4500' 
 };
 
 function Level5_BossFight({ lives, onComplete, onLoseLife, onReturnToHub, onResetLives }) {
@@ -34,141 +47,181 @@ function Level5_BossFight({ lives, onComplete, onLoseLife, onReturnToHub, onRese
   const animationRef = useRef(null);
   const keysRef = useRef({});
 
-  // Logic Refs (avoid re-renders for game loop logic)
+  // Logic Refs
   const lastTimeRef = useRef(performance.now());
   const lastShotTimeRef = useRef(0);
-  const attackTimerRef = useRef(0); // Time until next boss attack
+  const attackTimerRef = useRef(0); 
   
-  // ============ GAME STATE ============
+  // Sprite Refs
+  const spriteRefs = useRef({
+    standing: null,
+    runLeft1: null, runLeft2: null, runLeft3: null,
+    runRight1: null, runRight2: null, runRight3: null
+  });
+
+  // Animation State
+  const [animationState, setAnimationState] = useState('idle');
+  const [animationFrame, setAnimationFrame] = useState(0);
+  const animationTimerRef = useRef(0);
+  const animationStateRef = useRef('idle');
+  const animationFrameRef = useRef(0);
+
+  // Game State
   const [gameState, setGameState] = useState({
     gameStarted: true,
     gameOver: false,
     levelCompleted: false,
-    phase: 1, // 1 = Tourist Trouble, 2 = Rush Hour
-    
-    // Player
-    player: { 
-      x: SCREEN_WIDTH / 2, 
-      y: SCREEN_HEIGHT - 80, 
-      invincible: false, 
-      invincibilityTimer: 0 
-    },
-
-    // Boss
-    boss: { 
-      x: SCREEN_WIDTH / 2 - BOSS_SIZE.w / 2, 
-      y: 50, 
-      health: BOSS_MAX_HEALTH, 
-      dir: 1 // Movement direction
-    },
-
-    // Objects
+    phase: 1, 
+    player: { x: SCREEN_WIDTH / 2, lane: 1, y: LANE_BOTTOM_Y + 15, invincible: false, invincibilityTimer: 0 },
+    boss: { x: SCREEN_WIDTH / 2 - BOSS_SIZE.w / 2, y: 50, health: BOSS_MAX_HEALTH, dir: 1 },
     projectiles: [],
-    hazards: [], // Taxis, Pigeons, Shockwaves
-    particles: [] // Visual effects
+    hazards: [], 
+    particles: [] 
   });
+
+  // ============ ASSET LOADING ============
+  useEffect(() => {
+    const loadImg = (src) => {
+      const img = new Image();
+      img.src = src;
+      return img;
+    };
+    spriteRefs.current = {
+      standing: loadImg('/src/assets/sprites/standing.png'),
+      runLeft1: loadImg('/src/assets/sprites/runleft1.png'),
+      runLeft2: loadImg('/src/assets/sprites/runleft2.png'),
+      runLeft3: loadImg('/src/assets/sprites/runleft3.png'),
+      runRight1: loadImg('/src/assets/sprites/runright1.png'),
+      runRight2: loadImg('/src/assets/sprites/runright2.png'),
+      runRight3: loadImg('/src/assets/sprites/runright3.png')
+    };
+  }, []);
+
+  // Sync animation refs to state for rendering
+  useEffect(() => {
+    const syncInterval = setInterval(() => {
+      // Only update state when values actually change
+      if (animationStateRef.current !== animationState) {
+        setAnimationState(animationStateRef.current);
+      }
+      if (animationFrameRef.current !== animationFrame) {
+        setAnimationFrame(animationFrameRef.current);
+      }
+    }, 1000/60); // Check at 60 FPS
+
+    return () => clearInterval(syncInterval);
+  }, [animationState, animationFrame]);
+
+  // Detect game over when lives run out
+  useEffect(() => {
+    if (lives <= 0 && gameState.gameStarted && !gameState.levelCompleted && !gameState.gameOver) {
+      setGameState(prev => ({ ...prev, gameOver: true }));
+    }
+  }, [lives, gameState.gameStarted, gameState.levelCompleted, gameState.gameOver]);
+
+  const getCurrentSprite = () => {
+    const sprites = spriteRefs.current;
+    switch (animationState) {
+      case 'runLeft': return [sprites.runLeft1, sprites.runLeft2, sprites.runLeft3][animationFrame] || null;
+      case 'runRight': return [sprites.runRight1, sprites.runRight2, sprites.runRight3][animationFrame] || null;
+      default: return sprites.standing || null;
+    }
+  };
 
   // ============ INPUT HANDLING ============
   useEffect(() => {
     const handleKeyDown = (e) => keysRef.current[e.code] = true;
     const handleKeyUp = (e) => keysRef.current[e.code] = false;
-    
     window.addEventListener('keydown', handleKeyDown);
     window.addEventListener('keyup', handleKeyUp);
-    return () => {
-      window.removeEventListener('keydown', handleKeyDown);
-      window.removeEventListener('keyup', handleKeyUp);
-    };
+    return () => { window.removeEventListener('keydown', handleKeyDown); window.removeEventListener('keyup', handleKeyUp); };
   }, []);
 
   // ============ HELPER FUNCTIONS ============
-  
-  // Simple AABB Collision Detection
   const checkCollision = (rect1, rect2) => {
-    return (
-      rect1.x < rect2.x + rect2.w &&
-      rect1.x + rect1.w > rect2.x &&
-      rect1.y < rect2.y + rect2.h &&
-      rect1.y + rect1.h > rect2.y
-    );
+    return (rect1.x < rect2.x + rect2.w && rect1.x + rect1.w > rect2.x && rect1.y < rect2.y + rect2.h && rect1.y + rect1.h > rect2.y);
   };
 
   const spawnParticles = (x, y, color, count) => {
     const parts = [];
     for(let i=0; i<count; i++) {
-      parts.push({
-        x, y,
-        vx: (Math.random() - 0.5) * 300,
-        vy: (Math.random() - 0.5) * 300,
-        life: 0.5, // seconds
-        color
-      });
+      parts.push({ x, y, vx: (Math.random()-0.5)*300, vy: (Math.random()-0.5)*300, life: 0.5, color });
     }
     return parts;
   };
 
-  // ============ BOSS ATTACK LOGIC ============
-  const spawnAttack = (currentPhase) => {
+  const handleRetry = () => {
+    onResetLives();
+    setGameState({
+      gameStarted: true,
+      gameOver: false,
+      levelCompleted: false,
+      phase: 1,
+      player: { x: SCREEN_WIDTH / 2, lane: 1, y: LANE_BOTTOM_Y + 15, invincible: false, invincibilityTimer: 0 },
+      boss: { x: SCREEN_WIDTH / 2 - BOSS_SIZE.w / 2, y: 50, health: BOSS_MAX_HEALTH, dir: 1 },
+      projectiles: [],
+      hazards: [],
+      particles: []
+    });
+    animationStateRef.current = 'idle';
+    animationFrameRef.current = 0;
+    animationTimerRef.current = 0;
+  };
+
+  const handleReturnToHub = () => {
+    onReturnToHub();
+  };
+
+  // ============ SPAWN LOGIC (WITH SAFETY LOCK RESTORED) ============
+  const spawnAttack = (currentPhase, currentHazards) => {
     const attacks = [];
     
-    // Randomly choose an attack based on phase
-    const rand = Math.random();
+    // SAFETY CHECK: Is there ALREADY a Taxi or Shockwave (Ground Hazard) active?
+    const isGroundBlocked = currentHazards.some(h => h.type === 'taxi' || h.type === 'shockwave');
+
+    // If ground is blocked, FORCE 'rand' to fall into the Pigeon range (0.6)
+    // This prevents spawning a second ground hazard that makes the game impossible.
+    let rand = isGroundBlocked ? 0.6 : Math.random();
     
     // --- ATTACK 1: TAXI DASH ---
-    if (rand < 0.4) { 
-      // Phase 1: 1 Taxi. Phase 2: 2 Taxis faster.
-      const speed = currentPhase === 1 ? 400 : 700;
-      const count = currentPhase === 1 ? 1 : 2;
-      
+    if (rand < 0.5) { 
+      const speed = currentPhase === 1 ? 350 : 450;
+      const count = currentPhase === 1 ? 1 : 2; 
+      const batchLane = Math.random() > 0.5 ? 1 : 2;
+      const fromLeft = Math.random() > 0.5;
+      const yPos = batchLane === 1 ? LANE_BOTTOM_Y + 20 : LANE_TOP_Y + 20;
+
       for(let i=0; i<count; i++) {
-        const fromLeft = Math.random() > 0.5;
-        const yPos = SCREEN_HEIGHT - (40 + (i * 60)); // Lanes
+        const offsetX = i * 250; 
         attacks.push({
-          type: 'taxi',
-          x: fromLeft ? -100 : SCREEN_WIDTH + 100,
-          y: yPos,
-          w: 80, h: 40,
-          vx: fromLeft ? speed : -speed,
-          vy: 0,
-          warning: 0 // Instant spawn for taxi, maybe add warning later
+          type: 'taxi', lane: batchLane, 
+          x: fromLeft ? -150 - offsetX : SCREEN_WIDTH + 150 + offsetX,
+          y: yPos, w: 100, h: 40, vx: fromLeft ? speed : -speed, vy: 0,
+          spawnTimer: 1.5, spawnSide: fromLeft ? 'left' : 'right'
         });
       }
     } 
     // --- ATTACK 2: PIGEON SWOOP ---
-    else if (rand < 0.7) {
-      // Phase 1: 3 Pigeons. Phase 2: 6 Pigeons.
-      const count = currentPhase === 1 ? 3 : 6;
+    else if (rand < 0.8) {
+      const count = currentPhase === 1 ? 2 : 3;
       for(let i=0; i<count; i++) {
         attacks.push({
-          type: 'pigeon',
-          x: Math.random() * SCREEN_WIDTH,
-          y: -50 - (Math.random() * 200), // Staggered start
-          w: 30, h: 30,
-          vx: (Math.random() - 0.5) * 200, // Slight horizontal drift
-          vy: currentPhase === 1 ? 200 : 350 // Fall speed
+          type: 'pigeon', lane: 0, 
+          x: Math.random() * SCREEN_WIDTH, y: -50 - (Math.random() * 200),
+          w: 30, h: 30, vx: (Math.random()-0.5)*200, vy: currentPhase === 1 ? 200 : 300 
         });
       }
     }
-    // --- ATTACK 3: SUBWAY SHOCKWAVE ---
+    // --- ATTACK 3: SHOCKWAVE ---
     else {
-      // Phase 1: 1 Wave. Phase 2: 2 Waves.
-      const count = currentPhase === 1 ? 1 : 2;
-      for(let i=0; i<count; i++) {
-        attacks.push({
-          type: 'shockwave',
-          x: 0,
-          y: SCREEN_HEIGHT - 20, // Ground level
-          w: SCREEN_WIDTH,
-          h: 20,
-          vx: 0, vy: 0,
-          warning: 1.5, // Seconds of warning before damage
-          active: 0.5, // Seconds of active damage
-          safeZoneX: Math.random() * (SCREEN_WIDTH - 100), // Safe spot hole
-          safeZoneW: 100
-        });
-      }
+      const targetLane = Math.random() > 0.5 ? 1 : 2;
+      const yPos = targetLane === 1 ? LANE_BOTTOM_Y : LANE_TOP_Y;
+      attacks.push({
+        type: 'shockwave', lane: targetLane, 
+        x: 0, y: yPos, w: SCREEN_WIDTH, h: LANE_HEIGHT, vx: 0, vy: 0,
+        warning: 2.0, active: 0.5 
+      });
     }
-
     return attacks;
   };
 
@@ -177,86 +230,68 @@ function Level5_BossFight({ lives, onComplete, onLoseLife, onReturnToHub, onRese
     if (!gameState.gameStarted || gameState.gameOver || gameState.levelCompleted) return;
 
     const loop = (time) => {
-      const deltaTime = (time - lastTimeRef.current) / 1000; // Seconds
+      const deltaTime = (time - lastTimeRef.current) / 1000;
       lastTimeRef.current = time;
-
-      // Cap deltaTime to prevent skipping collisions on lag
       const dt = Math.min(deltaTime, 0.1);
 
       setGameState(prev => {
         const next = { ...prev };
-        
-        // --- 1. PLAYER MOVEMENT ---
+
+        // --- MOVEMENT & ANIMATION ---
+        let newAnim = 'idle';
+        let isMoving = false;
+
         if (keysRef.current['KeyA'] || keysRef.current['ArrowLeft']) {
           next.player.x = Math.max(0, next.player.x - PLAYER_SPEED * dt);
+          newAnim = 'runLeft'; isMoving = true;
         }
         if (keysRef.current['KeyD'] || keysRef.current['ArrowRight']) {
           next.player.x = Math.min(SCREEN_WIDTH - PLAYER_SIZE.w, next.player.x + PLAYER_SPEED * dt);
+          newAnim = 'runRight'; isMoving = true;
         }
+        if (keysRef.current['KeyW'] || keysRef.current['ArrowUp']) next.player.lane = 2;
+        if (keysRef.current['KeyS'] || keysRef.current['ArrowDown']) next.player.lane = 1;
 
-        // --- 2. PLAYER SHOOTING ---
+        next.player.y = next.player.lane === 1 ? LANE_BOTTOM_Y + 15 : LANE_TOP_Y + 15;
+
+        // --- SHOOTING ---
         if (keysRef.current['Space'] && time - lastShotTimeRef.current > FIRE_RATE) {
           lastShotTimeRef.current = time;
           next.projectiles.push({
-            x: next.player.x + PLAYER_SIZE.w / 2 - PROJECTILE_SIZE.w / 2,
-            y: next.player.y,
-            w: PROJECTILE_SIZE.w,
-            h: PROJECTILE_SIZE.h,
-            active: true
+            x: next.player.x + PLAYER_SIZE.w/2 - PROJECTILE_SIZE.w/2, y: next.player.y,
+            w: PROJECTILE_SIZE.w, h: PROJECTILE_SIZE.h, active: true
           });
         }
 
-        // --- 3. BOSS LOGIC ---
-        // Float Left/Right
-        next.boss.x += 100 * next.boss.dir * dt;
-        if (next.boss.x <= 50 || next.boss.x + BOSS_SIZE.w >= SCREEN_WIDTH - 50) {
-          next.boss.dir *= -1;
-        }
+        // --- BOSS ---
+        next.boss.x += 150 * next.boss.dir * dt;
+        if (next.boss.x <= 50 || next.boss.x + BOSS_SIZE.w >= SCREEN_WIDTH - 50) next.boss.dir *= -1;
+        if (next.boss.health <= BOSS_MAX_HEALTH / 2 && next.phase === 1) next.phase = 2;
 
-        // Phase Transition
-        if (next.boss.health <= BOSS_MAX_HEALTH / 2 && next.phase === 1) {
-          next.phase = 2; // Trigger Rush Hour!
-          // Push away player slightly as a "roar" effect? (Optional, skipping for simplicity)
-        }
-
-        // Win Condition
         if (next.boss.health <= 0) {
-            next.levelCompleted = true;
-            next.boss.health = 0;
-            setTimeout(() => {
-                onComplete({
-                    title: "The Chaos Subsided",
-                    type: "text",
-                    content: "NYC is loud, crazy, and overwhelming. But with you, even the chaos feels like an adventure. I'd face any monster for you."
-                });
-            }, 1000);
-            return next; // Stop updates
+            next.levelCompleted = true; next.boss.health = 0;
+            setTimeout(() => { onComplete({ title: "Chaos Subsided", type: "text", content: "NYC is crazy, but we conquered it together!" }); }, 1000);
+            return next; 
         }
 
-        // Spawn Attacks
+        // --- SPAWNING ---
         attackTimerRef.current -= dt;
         if (attackTimerRef.current <= 0) {
-          // Reset timer based on phase (Phase 2 is faster)
-          attackTimerRef.current = next.phase === 1 ? 2.5 : 1.5;
-          const newHazards = spawnAttack(next.phase);
-          next.hazards.push(...newHazards);
+          // Slightly reduced attack frequency to account for longer hazard duration
+          attackTimerRef.current = next.phase === 1 ? 1.8 : 1.2; 
+          // PASS CURRENT HAZARDS to enable the Safety Lock
+          next.hazards.push(...spawnAttack(next.phase, next.hazards));
         }
 
-        // --- 4. PROJECTILE PHYSICS & COLLISION ---
+        // --- PHYSICS ---
         next.projectiles = next.projectiles.filter(p => {
           p.y -= PROJECTILE_SPEED * dt;
-          
-          // Hit Boss?
           if (p.active && checkCollision(p, { ...next.boss, w: BOSS_SIZE.w, h: BOSS_SIZE.h })) {
-            next.boss.health -= 1;
-            next.particles.push(...spawnParticles(p.x, p.y, COLORS.bossPhase2, 5));
-            return false; // Remove bullet
+            next.boss.health -= 1; next.particles.push(...spawnParticles(p.x, p.y, COLORS.bossPhase2, 5)); return false; 
           }
-          return p.y > -50; // Keep if on screen
+          return p.y > -50; 
         });
 
-        // --- 5. HAZARD PHYSICS & COLLISION ---
-        // Handle invincibility
         if (next.player.invincible) {
           next.player.invincibilityTimer -= dt;
           if (next.player.invincibilityTimer <= 0) next.player.invincible = false;
@@ -265,58 +300,54 @@ function Level5_BossFight({ lives, onComplete, onLoseLife, onReturnToHub, onRese
         const playerBox = { x: next.player.x, y: next.player.y, w: PLAYER_SIZE.w, h: PLAYER_SIZE.h };
 
         next.hazards = next.hazards.filter(h => {
-          // Movement
-          h.x += h.vx * dt;
-          h.y += h.vy * dt;
-
-          // Shockwave specific logic
-          if (h.type === 'shockwave') {
-            if (h.warning > 0) {
-              h.warning -= dt;
-            } else {
-              h.active -= dt;
-            }
-            if (h.active <= 0) return false; // Remove expired shockwave
-            
-            // Shockwave Collision (Complex because of safe spot)
-            if (h.warning <= 0 && !next.player.invincible) {
-               // Check if player is on the ground level AND NOT in the safe spot
-               const inSafeSpot = (next.player.x > h.safeZoneX && next.player.x + PLAYER_SIZE.w < h.safeZoneX + h.safeZoneW);
-               if (!inSafeSpot && next.player.y + PLAYER_SIZE.h >= h.y) {
-                 next.player.invincible = true;
-                 next.player.invincibilityTimer = 2.0;
-                 onLoseLife();
-               }
-            }
-            return true;
+          let isHit = false;
+          if (h.type === 'taxi') {
+             if (h.spawnTimer > 0) { h.spawnTimer -= dt; return true; }
+             else { h.x += h.vx * dt; if (next.player.lane === h.lane && checkCollision(h, playerBox)) isHit = true; }
+          }
+          else if (h.type === 'shockwave') {
+            if (h.warning > 0) h.warning -= dt;
+            else { h.active -= dt; if (h.active > 0 && next.player.lane === h.lane) isHit = true; }
+            if (h.active <= 0) return false; 
+          }
+          else if (h.type === 'pigeon') {
+            h.x += h.vx * dt; h.y += h.vy * dt; if (checkCollision(h, playerBox)) isHit = true;
           }
 
-          // Standard Collision (Taxi/Pigeon)
-          if (!next.player.invincible && checkCollision(h, playerBox)) {
-            next.player.invincible = true;
-            next.player.invincibilityTimer = 2.0;
-            onLoseLife();
-            // Don't remove hazard, just hurt player
+          if (isHit && !next.player.invincible) {
+            next.player.invincible = true; next.player.invincibilityTimer = 2.0; onLoseLife();
           }
-
-          // Cleanup off-screen
-          return h.x > -200 && h.x < SCREEN_WIDTH + 200 && h.y < SCREEN_HEIGHT + 50;
+          return h.x > -400 && h.x < SCREEN_WIDTH + 400 && h.y < SCREEN_HEIGHT + 50;
         });
 
-        // --- 6. PARTICLES ---
-        next.particles = next.particles.filter(p => {
-          p.x += p.vx * dt;
-          p.y += p.vy * dt;
-          p.life -= dt;
-          return p.life > 0;
-        });
+        next.particles = next.particles.filter(p => { p.life -= dt; return p.life > 0; });
+
+        // --- ANIMATION (Using refs to avoid state batching issues) ---
+        // Update refs if animation state changed
+        if (newAnim !== animationStateRef.current) {
+          animationStateRef.current = newAnim;
+          animationFrameRef.current = 0;
+          animationTimerRef.current = 0;
+        }
+
+        // Handle frame animation timing for running animations
+        if (isMoving) {
+          animationTimerRef.current += 1;
+          if (animationTimerRef.current >= 12) { // 12 frames = ~200ms at 60fps
+            animationTimerRef.current = 0;
+            animationFrameRef.current = (animationFrameRef.current + 1) % 3; // Cycles: 0 → 1 → 2 → 0
+          }
+        } else {
+          // Reset to idle frame when not moving
+          animationFrameRef.current = 0;
+          animationTimerRef.current = 0;
+        }
 
         return next;
       });
 
       animationRef.current = requestAnimationFrame(loop);
     };
-
     animationRef.current = requestAnimationFrame(loop);
     return () => cancelAnimationFrame(animationRef.current);
   }, [gameState.gameStarted, gameState.gameOver, gameState.levelCompleted]);
@@ -326,181 +357,111 @@ function Level5_BossFight({ lives, onComplete, onLoseLife, onReturnToHub, onRese
     const canvas = canvasRef.current;
     if (!canvas) return;
     const ctx = canvas.getContext('2d');
+    ctx.imageSmoothingEnabled = false;
 
-    // 1. Background (Day vs Night)
-    const bgColor = gameState.phase === 1 ? COLORS.skyPhase1 : COLORS.skyPhase2;
-    ctx.fillStyle = bgColor;
+    // Background
+    ctx.fillStyle = gameState.phase === 1 ? COLORS.skyPhase1 : COLORS.skyPhase2;
     ctx.fillRect(0, 0, SCREEN_WIDTH, SCREEN_HEIGHT);
+    ctx.fillStyle = gameState.phase === 1 ? '#555' : '#222';
+    ctx.fillRect(50, SCREEN_HEIGHT - 400, 100, 240);
+    ctx.fillRect(200, SCREEN_HEIGHT - 500, 150, 340);
+    ctx.fillRect(SCREEN_WIDTH - 300, SCREEN_HEIGHT - 450, 120, 290);
 
-    // Draw Skyline (Simple Rectangles)
-    ctx.fillStyle = gameState.phase === 1 ? '#555' : '#111';
-    // Draw some static buildings
-    ctx.fillRect(50, SCREEN_HEIGHT - 300, 100, 300);
-    ctx.fillRect(200, SCREEN_HEIGHT - 400, 150, 400);
-    ctx.fillRect(SCREEN_WIDTH - 300, SCREEN_HEIGHT - 350, 120, 350);
+    // Road
+    ctx.fillStyle = '#444'; ctx.fillRect(0, LANE_TOP_Y, SCREEN_WIDTH, LANE_HEIGHT);
+    ctx.fillStyle = COLORS.laneDivider; for(let i=0; i<SCREEN_WIDTH; i+=100) ctx.fillRect(i, LANE_BOTTOM_Y - 2, 50, 4);
+    ctx.fillStyle = '#444'; ctx.fillRect(0, LANE_BOTTOM_Y, SCREEN_WIDTH, LANE_HEIGHT);
     
-    // Windows (Light up in Phase 2)
-    ctx.fillStyle = gameState.phase === 1 ? '#888' : '#FFD700';
-    if (gameState.phase === 2) {
-      // Simple loop to draw windows
-      for(let i=0; i<10; i++) ctx.fillRect(220, SCREEN_HEIGHT - 380 + (i*40), 20, 20);
-    }
+    // Labels
+    ctx.fillStyle = 'rgba(255,255,255,0.2)'; ctx.font = '16px monospace';
+    ctx.fillText("LANE 2 (UP)", 20, LANE_TOP_Y + 45); ctx.fillText("LANE 1 (DOWN)", 20, LANE_BOTTOM_Y + 45);
 
-    // 2. Boss
-    const bossColor = gameState.phase === 1 ? COLORS.bossPhase1 : COLORS.bossPhase2;
-    const shakeX = gameState.phase === 2 ? (Math.random() - 0.5) * 5 : 0; // Shake in rage
+    // Boss
+    ctx.fillStyle = gameState.phase === 1 ? COLORS.bossPhase1 : COLORS.bossPhase2;
+    ctx.fillRect(gameState.boss.x, gameState.boss.y, BOSS_SIZE.w, BOSS_SIZE.h);
+    ctx.fillStyle = '#FFF'; ctx.beginPath();
+    ctx.arc(gameState.boss.x + 50, gameState.boss.y + 50, 20, 0, Math.PI * 2);
+    ctx.arc(gameState.boss.x + 150, gameState.boss.y + 50, 20, 0, Math.PI * 2); ctx.fill();
     
-    ctx.fillStyle = bossColor;
-    ctx.fillRect(gameState.boss.x + shakeX, gameState.boss.y, BOSS_SIZE.w, BOSS_SIZE.h);
-    
-    // Boss Face
-    ctx.fillStyle = '#FFF';
-    ctx.beginPath(); // Eyes
-    ctx.arc(gameState.boss.x + 50 + shakeX, gameState.boss.y + 50, 20, 0, Math.PI * 2);
-    ctx.arc(gameState.boss.x + 150 + shakeX, gameState.boss.y + 50, 20, 0, Math.PI * 2);
-    ctx.fill();
-    
-    // Boss Health Bar (Above Boss)
-    const hpPercent = gameState.boss.health / BOSS_MAX_HEALTH;
-    ctx.fillStyle = '#333';
-    ctx.fillRect(gameState.boss.x, gameState.boss.y - 20, BOSS_SIZE.w, 10);
-    ctx.fillStyle = '#FF0000';
-    ctx.fillRect(gameState.boss.x, gameState.boss.y - 20, BOSS_SIZE.w * hpPercent, 10);
+    // Health
+    ctx.fillStyle = '#333'; ctx.fillRect(gameState.boss.x, gameState.boss.y - 20, BOSS_SIZE.w, 10);
+    ctx.fillStyle = '#FF0000'; ctx.fillRect(gameState.boss.x, gameState.boss.y - 20, BOSS_SIZE.w * (gameState.boss.health/BOSS_MAX_HEALTH), 10);
 
-    // 3. Hazards
+    // Hazards
     gameState.hazards.forEach(h => {
       if (h.type === 'taxi') {
-        ctx.fillStyle = COLORS.taxi;
-        ctx.fillRect(h.x, h.y, h.w, h.h);
-        // Wheels
-        ctx.fillStyle = '#000';
-        ctx.fillRect(h.x + 10, h.y + h.h, 15, 5);
-        ctx.fillRect(h.x + h.w - 25, h.y + h.h, 15, 5);
-      } else if (h.type === 'pigeon') {
-        ctx.fillStyle = COLORS.pigeon;
-        ctx.beginPath();
-        ctx.arc(h.x, h.y, h.w/2, 0, Math.PI * 2);
-        ctx.fill();
-        // Wings
-        ctx.fillStyle = '#FFF';
-        ctx.fillRect(h.x - 10, h.y - 10, 5, 15);
-        ctx.fillRect(h.x + 5, h.y - 10, 5, 15);
-      } else if (h.type === 'shockwave') {
-        if (h.warning > 0) {
-            // Warning box
-            ctx.fillStyle = COLORS.shockwaveWarn;
-            ctx.fillRect(0, h.y, SCREEN_WIDTH, h.h);
-            // Safe zone indicator
-            ctx.fillStyle = 'rgba(0, 255, 0, 0.3)';
-            ctx.fillRect(h.safeZoneX, h.y, h.safeZoneW, h.h);
+        if (h.spawnTimer > 0) {
+            ctx.fillStyle = COLORS.warningSign;
+            const warnX = h.spawnSide === 'left' ? 20 : SCREEN_WIDTH - 60;
+            ctx.fillRect(warnX, h.y, 40, 40);
+            ctx.fillStyle = '#FFF'; ctx.font = '30px monospace'; ctx.fillText("!", warnX + 12, h.y + 30);
         } else {
-            // Active damage
-            ctx.fillStyle = COLORS.shockwaveActive;
-            // Left of safe zone
-            ctx.fillRect(0, h.y, h.safeZoneX, h.h);
-            // Right of safe zone
-            ctx.fillRect(h.safeZoneX + h.safeZoneW, h.y, SCREEN_WIDTH - (h.safeZoneX + h.safeZoneW), h.h);
+            ctx.fillStyle = COLORS.taxi; ctx.fillRect(h.x, h.y, h.w, h.h);
+            ctx.fillStyle = '#FFF'; h.vx > 0 ? ctx.fillRect(h.x+h.w-10, h.y+5, 10, 10) : ctx.fillRect(h.x, h.y+5, 10, 10);
         }
+      } else if (h.type === 'shockwave') {
+        ctx.fillStyle = h.warning > 0 ? COLORS.shockwaveWarn : COLORS.shockwaveActive;
+        ctx.fillRect(h.x, h.y, h.w, h.h);
+        if (h.warning > 0) { ctx.fillStyle = '#FFF'; ctx.font = '20px monospace'; ctx.fillText("!!! MOVE !!!", SCREEN_WIDTH/2 - 50, h.y + 45); }
+      } else if (h.type === 'pigeon') {
+        ctx.fillStyle = COLORS.pigeon; ctx.beginPath(); ctx.arc(h.x, h.y, h.w/2, 0, Math.PI*2); ctx.fill();
       }
     });
 
-    // 4. Projectiles
+    // Projectiles
     ctx.fillStyle = COLORS.projectile;
-    gameState.projectiles.forEach(p => {
-      ctx.beginPath();
-      ctx.arc(p.x + p.w/2, p.y + p.h/2, p.w, 0, Math.PI * 2);
-      ctx.fill();
-    });
+    gameState.projectiles.forEach(p => { ctx.beginPath(); ctx.arc(p.x + p.w/2, p.y + p.h/2, p.w, 0, Math.PI*2); ctx.fill(); });
 
-    // 5. Player
-    if (!gameState.player.invincible || Math.floor(Date.now() / 100) % 2 === 0) {
-      ctx.fillStyle = COLORS.player;
-      ctx.fillRect(gameState.player.x, gameState.player.y, PLAYER_SIZE.w, PLAYER_SIZE.h);
-      // Simple face
-      ctx.fillStyle = '#000';
-      ctx.fillRect(gameState.player.x + 10, gameState.player.y + 10, 5, 5);
-      ctx.fillRect(gameState.player.x + 25, gameState.player.y + 10, 5, 5);
-      ctx.fillRect(gameState.player.x + 15, gameState.player.y + 25, 10, 3);
+    // Player (Corrected Sprite Drawing)
+    const shouldFlash = gameState.player.invincible && Math.floor(Date.now() / 100) % 2 === 1;
+    if (!shouldFlash) {
+      const currentSprite = getCurrentSprite();
+      if (currentSprite) {
+        ctx.drawImage(currentSprite, gameState.player.x + SPRITE_OFFSET_X, gameState.player.y + SPRITE_OFFSET_Y, SPRITE_SIZE, SPRITE_SIZE);
+      } else {
+        ctx.fillStyle = COLORS.player; ctx.fillRect(gameState.player.x, gameState.player.y, PLAYER_SIZE.w, PLAYER_SIZE.h);
+      }
     }
 
-    // 6. Particles
-    gameState.particles.forEach(p => {
-        ctx.fillStyle = p.color;
-        ctx.fillRect(p.x, p.y, 4, 4);
-    });
+    // Particles
+    gameState.particles.forEach(p => { ctx.fillStyle = p.color; ctx.fillRect(p.x, p.y, 4, 4); });
 
-  }, [gameState]);
+  }, [gameState, animationState, animationFrame]);
 
-  // ============ RETRY LOGIC ============
-  const handleRetry = () => {
-    onResetLives();
-    setGameState(prev => ({
-        ...prev,
-        gameOver: false,
-        levelCompleted: false,
-        phase: 1,
-        player: { ...prev.player, x: SCREEN_WIDTH / 2, invincible: false },
-        boss: { x: SCREEN_WIDTH/2 - BOSS_SIZE.w/2, y: 50, health: BOSS_MAX_HEALTH, dir: 1 },
-        projectiles: [],
-        hazards: [],
-        particles: []
-    }));
-    lastShotTimeRef.current = 0;
-    attackTimerRef.current = 0;
-  };
-
+  // ============ UI & RETRY ============
   return (
     <div className="canvas-container">
-      {/* HUD */}
-      <div style={{
-        position: 'absolute', top: 20, left: 20, color: 'white', 
-        fontFamily: '"Press Start 2P", monospace', zIndex: 10,
-        textShadow: '2px 2px 0 #000'
-      }}>
+      <div style={{ position: 'absolute', top: 20, left: 20, color: 'white', fontFamily: '"Press Start 2P", monospace', zIndex: 10, textShadow: '2px 2px 0 #000' }}>
         <h2>🗽 NYC Chaos Beast</h2>
-        <p>Lives: {lives}</p>
-        <p>Phase: {gameState.phase === 1 ? "Tourist Trouble" : "RUSH HOUR!"}</p>
+        
+        {/* Visual Hearts Display */}
+        <div style={{ display: 'flex', gap: '5px', marginTop: '10px' }}>
+           {[...Array(3)].map((_, i) => <span key={i} style={{ fontSize: '24px', opacity: i < lives ? 1 : 0.3 }}>❤️</span>)}
+        </div>
+
+        <p style={{ marginTop: '10px', fontSize: '14px' }}>Phase: {gameState.phase === 1 ? "Tourist Trouble" : "RUSH HOUR!"}</p>
+        <p style={{ fontSize: '10px', color: '#FFFF00', marginTop: '5px' }}>W/S: Switch Lanes | SPACE: Shoot</p>
       </div>
 
-      <canvas 
-        ref={canvasRef} 
-        width={SCREEN_WIDTH} 
-        height={SCREEN_HEIGHT}
-        style={{ background: '#333' }}
-      />
+      <canvas ref={canvasRef} width={SCREEN_WIDTH} height={SCREEN_HEIGHT} style={{ background: '#333' }} />
 
-      {/* Controls Hint */}
-      <div style={{
-        position: 'absolute', bottom: 20, left: 20, color: 'white', 
-        fontFamily: 'monospace', opacity: 0.8
-      }}>
-        [A/D] Move | [SPACE] Shoot Love Bolts
-      </div>
-
-      {/* Return Button */}
-      <button
-        onClick={onReturnToHub}
-        style={{
-          position: 'absolute', bottom: '20px', right: '20px',
-          padding: '12px 24px', fontSize: '12px',
-          fontFamily: '"Press Start 2P", monospace',
-          background: '#8B4513', color: '#fff',
-          border: '3px solid #fff', borderRadius: '8px',
-          cursor: 'pointer'
-        }}
-      >
+      <button onClick={onReturnToHub} style={{ position: 'absolute', bottom: '20px', right: '20px', padding: '12px 24px', fontSize: '12px', fontFamily: '"Press Start 2P", monospace', background: '#8B4513', color: '#fff', border: '3px solid #fff', borderRadius: '8px', cursor: 'pointer' }}>
         Return to Hub
       </button>
 
-      {/* Game Over Screen */}
-      {lives <= 0 && !gameState.levelCompleted && (
+      {gameState.gameOver && (
         <div className="game-over-overlay">
           <div className="game-over-dialog">
-            <h2>The City Won...</h2>
-            <p>Don't give up! Try again?</p>
+            <h2>Game Over</h2>
+            <p>The NYC Chaos Beast was too much!</p>
+            <p>Would you like to try again or return to the hub?</p>
             <div className="game-over-buttons">
-              <button className="retry-button" onClick={handleRetry}>🔄 Retry</button>
-              <button className="hub-button" onClick={onReturnToHub}>🏠 Hub</button>
+              <button className="retry-button" onClick={handleRetry}>
+                🔄 Try Again
+              </button>
+              <button className="hub-button" onClick={handleReturnToHub}>
+                🏠 Return to Hub
+              </button>
             </div>
           </div>
         </div>

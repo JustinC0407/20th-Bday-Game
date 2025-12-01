@@ -113,12 +113,12 @@ function App() {
     setGameState(prev => {
       const newLives = prev.lives - 1;
       if (newLives <= 0) {
-        // For Level 1, let the level handle game over (has its own dialog)
+        // For Level 1 and Level 5, let the level handle game over (has its own dialog)
         // For other levels, return to hub with reset lives
-        if (prev.currentScreen === 'level1') {
+        if (prev.currentScreen === 'level1' || prev.currentScreen === 'level5') {
           return {
             ...prev,
-            lives: newLives // Let Level 1 handle the game over state
+            lives: newLives // Let the level handle the game over state
           };
         } else {
           // Game over for other levels - return to hub with reset lives

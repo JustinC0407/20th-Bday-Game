@@ -32,7 +32,12 @@ function Level1_Platformer({ lives, onComplete, onLoseLife, onReturnToHub, onRes
   });
   
   const backgroundRef = useRef(null);
-  
+  const grassBlockRef = useRef(null);
+  const audioRef = useRef(null);
+  const jumpSoundRef = useRef(null);
+  const heartPickupSoundRef = useRef(null);
+  const deathSoundRef = useRef(null);
+
   // Animation state
   const [animationState, setAnimationState] = useState('idle');
   const [animationFrame, setAnimationFrame] = useState(0);
@@ -92,6 +97,74 @@ function Level1_Platformer({ lives, onComplete, onLoseLife, onReturnToHub, onRes
     const bg = new Image();
     bg.onload = () => { backgroundRef.current = bg; };
     bg.src = '/level_1.jpeg';
+
+    const grassBlock = new Image();
+    grassBlock.onload = () => { grassBlockRef.current = grassBlock; };
+    grassBlock.onerror = () => {
+      console.warn('Failed to load grass block texture');
+      grassBlockRef.current = null;
+    };
+    grassBlock.src = '/src/assets/photos/level_1_grass_block.png';
+  }, []);
+
+  // Initialize background music
+  useEffect(() => {
+    const audio = new Audio('/src/assets/audio/level_1.mp3');
+    audio.loop = true;
+    audio.volume = 0.3; // 30% volume (quiet background music)
+    audio.preload = 'auto';
+
+    audioRef.current = audio;
+
+    return () => {
+      if (audioRef.current) {
+        audioRef.current.pause();
+        audioRef.current.currentTime = 0;
+        audioRef.current = null;
+      }
+    };
+  }, []);
+
+  // Load jump sound
+  useEffect(() => {
+    const audio = new Audio('/src/assets/audio/level_1_jump.mp3');
+    audio.volume = 0.2; // 30% volume
+    audio.preload = 'auto';
+    jumpSoundRef.current = audio;
+
+    return () => {
+      if (jumpSoundRef.current) {
+        jumpSoundRef.current = null;
+      }
+    };
+  }, []);
+
+  // Load heart pickup sound
+  useEffect(() => {
+    const audio = new Audio('/src/assets/audio/level_1_heart.mp3');
+    audio.volume = 0.5; // 70% volume (celebratory)
+    audio.preload = 'auto';
+    heartPickupSoundRef.current = audio;
+
+    return () => {
+      if (heartPickupSoundRef.current) {
+        heartPickupSoundRef.current = null;
+      }
+    };
+  }, []);
+
+  // Load death sound
+  useEffect(() => {
+    const audio = new Audio('/src/assets/audio/level_1_death.mp3');
+    audio.volume = 0.5; // 50% volume (not aggressive)
+    audio.preload = 'auto';
+    deathSoundRef.current = audio;
+
+    return () => {
+      if (deathSoundRef.current) {
+        deathSoundRef.current = null;
+      }
+    };
   }, []);
 
   const getCurrentSprite = () => {
@@ -105,6 +178,15 @@ function Level1_Platformer({ lives, onComplete, onLoseLife, onReturnToHub, onRes
         return sprites.standing || null;
     }
   };
+
+  // Start background music when level begins
+  useEffect(() => {
+    if (gameState.gameStarted && !gameState.gameOver && !gameState.levelCompleted && audioRef.current) {
+      audioRef.current.play().catch(err => {
+        console.warn('Background music playback failed:', err);
+      });
+    }
+  }, [gameState.gameStarted, gameState.gameOver, gameState.levelCompleted]);
 
   // ============ LEVEL INITIALIZATION (VERTICAL HARD MODE) ============
   const initializeLevel = () => {
@@ -333,6 +415,7 @@ function Level1_Platformer({ lives, onComplete, onLoseLife, onReturnToHub, onRes
         if ((keys['Space'] || keys['ArrowUp'] || keys['KeyW']) && player.grounded) {
           player.velocityY = JUMP_FORCE;
           player.grounded = false;
+          playJumpSound();
         }
         
         // Animation
@@ -389,6 +472,7 @@ function Level1_Platformer({ lives, onComplete, onLoseLife, onReturnToHub, onRes
           player.grounded = false;
           player.invincible = true;
           player.invincibilityTime = 120;
+          playDeathSound();
           onLoseLife();
         }
 
@@ -434,6 +518,7 @@ function Level1_Platformer({ lives, onComplete, onLoseLife, onReturnToHub, onRes
         });
         if (collectedHearts.length > 0) {
           newState.heartsCollected += collectedHearts.length;
+          playHeartPickupSound();
         }
 
         // Hazard Logic
@@ -463,6 +548,7 @@ function Level1_Platformer({ lives, onComplete, onLoseLife, onReturnToHub, onRes
               player.grounded = false;
               player.invincible = true;
               player.invincibilityTime = 120;
+              playDeathSound();
               onLoseLife();
               break;
             }
@@ -521,13 +607,45 @@ function Level1_Platformer({ lives, onComplete, onLoseLife, onReturnToHub, onRes
       ctx.save();
       ctx.translate(-gameState.camera.x, 0);
 
-      // Draw Platforms
-      ctx.fillStyle = '#8B4513';
+      // Draw Platforms (with grass block texture at consistent scale)
+      const grassBlock = grassBlockRef.current;
       gameState.platforms.forEach(p => {
-        ctx.fillRect(p.x, p.y, p.width, p.height);
-        ctx.strokeStyle = '#654321';
-        ctx.lineWidth = 2;
-        ctx.strokeRect(p.x, p.y, p.width, p.height);
+        if (grassBlock && grassBlock.complete) {
+          // Determine the actual image dimensions
+          const imageSize = grassBlock.width; // Assume square image
+          const GRASS_SCALE = 0.5; // 0.75 = show at 75% size (see more of texture)
+
+          // Calculate how much of the source image to slice
+          // Image portion is centered horizontally, starts from top
+          const maxSourceWidth = p.width / GRASS_SCALE;    // Scale factor applied
+          const maxSourceHeight = p.height / GRASS_SCALE;  // Scale factor applied
+
+          // Center the image horizontally within the platform
+          const sourceX = Math.max(0, (imageSize - maxSourceWidth) / 2);
+          const sourceY = 0; // Always start from top (grass side)
+          const sourceWidth = Math.min(maxSourceWidth, imageSize);
+          const sourceHeight = Math.min(maxSourceHeight, imageSize);
+
+          // Draw with scale applied
+          ctx.drawImage(
+            grassBlock,
+            sourceX,          // sx: horizontal center of image
+            sourceY,          // sy: start from top
+            sourceWidth,      // sWidth: how much to take from source
+            sourceHeight,     // sHeight: how much to take from source
+            p.x,              // dx: destination x
+            p.y,              // dy: destination y
+            p.width,          // dWidth: actual platform width (keeps platform size)
+            p.height          // dHeight: actual platform height (keeps platform size)
+          );
+        } else {
+          // Fallback: brown rectangles if image not loaded
+          ctx.fillStyle = '#8B4513';
+          ctx.fillRect(p.x, p.y, p.width, p.height);
+          ctx.strokeStyle = '#654321';
+          ctx.lineWidth = 2;
+          ctx.strokeRect(p.x, p.y, p.width, p.height);
+        }
       });
 
       // Draw Checkpoints
@@ -616,6 +734,14 @@ function Level1_Platformer({ lives, onComplete, onLoseLife, onReturnToHub, onRes
   const handleRetry = () => {
     onResetLives();
     activeCheckpointRef.current = { x: 100, y: LEVEL_HEIGHT - 200 };
+
+    // Reset and restart music
+    if (audioRef.current) {
+      audioRef.current.pause();
+      audioRef.current.currentTime = 0;
+      audioRef.current.volume = 0.3; // Reset volume to 30% (in case it was faded)
+    }
+
     setGameState(prev => ({
       ...prev,
       player: {
@@ -645,11 +771,59 @@ function Level1_Platformer({ lives, onComplete, onLoseLife, onReturnToHub, onRes
     onReturnToHub();
   };
 
+  const fadeOutMusic = () => {
+    if (!audioRef.current) return;
+
+    const audio = audioRef.current;
+    const fadeDuration = 1500; // 1.5 seconds
+    const fadeInterval = 50; // Update every 50ms
+    const steps = fadeDuration / fadeInterval;
+    const volumeStep = audio.volume / steps;
+
+    const fadeTimer = setInterval(() => {
+      if (audio.volume > volumeStep) {
+        audio.volume = Math.max(0, audio.volume - volumeStep);
+      } else {
+        audio.volume = 0;
+        audio.pause();
+        clearInterval(fadeTimer);
+      }
+    }, fadeInterval);
+  };
+
+  const playJumpSound = () => {
+    if (jumpSoundRef.current) {
+      jumpSoundRef.current.currentTime = 0; // Reset for rapid replays
+      jumpSoundRef.current.play().catch(e => console.warn('Jump sound failed:', e));
+    }
+  };
+
+  const playHeartPickupSound = () => {
+    if (heartPickupSoundRef.current) {
+      heartPickupSoundRef.current.currentTime = 0;
+      heartPickupSoundRef.current.play().catch(e => console.warn('Heart pickup sound failed:', e));
+    }
+  };
+
+  const playDeathSound = () => {
+    if (deathSoundRef.current) {
+      deathSoundRef.current.currentTime = 0;
+      deathSoundRef.current.play().catch(e => console.warn('Death sound failed:', e));
+    }
+  };
+
   useEffect(() => {
     if (lives <= 0 && gameState.gameStarted && !gameState.levelCompleted && !gameState.gameOver) {
       setGameState(prev => ({ ...prev, gameOver: true }));
     }
   }, [lives, gameState.gameStarted, gameState.levelCompleted, gameState.gameOver]);
+
+  // Fade out music when player wins or loses
+  useEffect(() => {
+    if ((gameState.levelCompleted || gameState.gameOver) && audioRef.current) {
+      fadeOutMusic();
+    }
+  }, [gameState.levelCompleted, gameState.gameOver]);
 
   // ============ INITIALIZE ON START ============
   useEffect(() => {
