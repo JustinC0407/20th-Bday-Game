@@ -3,6 +3,7 @@ import { useState, useRef, useEffect } from 'react';
 
 function LevelHub({ gameState, onStartLevel, onOpenMemoryRoom, onResetGame }) {
   const [showResetConfirm, setShowResetConfirm] = useState(false);
+  const [isMuted, setIsMuted] = useState(false);
   // ======= DEBUG MODE - EASY TO REMOVE =======
   const [debugUnlockAll, setDebugUnlockAll] = useState(false);
   // ======= END DEBUG MODE =======
@@ -38,6 +39,9 @@ function LevelHub({ gameState, onStartLevel, onOpenMemoryRoom, onResetGame }) {
   const animationFrameRef = useRef(0);
   const leafTimeoutsRef = useRef([]);
 
+  // Audio ref for background music
+  const backgroundMusicRef = useRef(null);
+
   const { completedLevels, progress } = gameState;
 
   // Level data positioned in heart shape (avoiding title area)
@@ -48,24 +52,22 @@ function LevelHub({ gameState, onStartLevel, onOpenMemoryRoom, onResetGame }) {
   
   // Heart shape coordinates with safe margins
   const levels = [
-    // Top left of heart
+    // Top center of heart
     { number: 1, title: "Heart Collect", icon: "❤️", x: centerX, y: centerY - screenHeight * 0.05 },
-    // Left side of heart  
+    // Left side of heart
     { number: 2, title: "Catch Kiss", icon: "💋", x: centerX - screenWidth * 0.15, y: centerY - screenHeight * 0.15 },
     // Bottom left of heart point
     { number: 3, title: "Puzzle of Us", icon: "🧩", x: centerX - screenWidth * 0.225, y: centerY},
-    // Bottom right of heart point
+    // Bottom center of heart
     { number: 4, title: "20 Stars", icon: "⭐", x: centerX, y: centerY + screenHeight * 0.35 },
     // Right side of heart
-    { number: 5, title: "Boss Fight", icon: "👾", x: centerX + screenWidth * 0.225, y: centerY },
-    // Top right of heart
-    { number: 6, title: "Pick Memory", icon: "📸", x: centerX + screenWidth * 0.15, y: centerY - screenHeight * 0.15 }
+    { number: 5, title: "Boss Fight", icon: "👾", x: centerX + screenWidth * 0.225, y: centerY }
   ];
   
-  // Memory room position (positioned above heart shape)
-  const memoryRoom = { 
-    x: centerX - 40, 
-    y: centerY - screenHeight * 0.2,
+  // Memory room position (top right of heart, where Level 6 was)
+  const memoryRoom = {
+    x: centerX + screenWidth * 0.15,
+    y: centerY - screenHeight * 0.15,
     width: 80,
     height: 60
   };
@@ -79,9 +81,9 @@ function LevelHub({ gameState, onStartLevel, onOpenMemoryRoom, onResetGame }) {
     return completedLevels.includes(levelNumber - 1); // Previous level must be completed
   };
 
-  // Check if memory room is available (all levels completed)
+  // Check if memory room is available (always available - password protected)
   const isMemoryRoomAvailable = () => {
-    return completedLevels.length === 6;
+    return true;
   };
 
   // Get level circle class based on status
@@ -99,6 +101,14 @@ function LevelHub({ gameState, onStartLevel, onOpenMemoryRoom, onResetGame }) {
   const handleResetGame = () => {
     onResetGame();
     setShowResetConfirm(false);
+  };
+
+  const toggleMute = () => {
+    if (backgroundMusicRef.current) {
+      const newMutedState = !isMuted;
+      backgroundMusicRef.current.volume = newMutedState ? 0 : 0.1;
+      setIsMuted(newMutedState);
+    }
   };
 
   // Load player sprites
@@ -123,6 +133,30 @@ function LevelHub({ gameState, onStartLevel, onOpenMemoryRoom, onResetGame }) {
       };
       img.src = src;
     });
+  }, []);
+
+  // Load and play background music
+  useEffect(() => {
+    const audio = new Audio('/src/assets/audio/home.mp3');
+    audio.loop = true;
+    audio.volume = 0.1; // 10% volume (subtle ambient background)
+    audio.preload = 'auto';
+
+    backgroundMusicRef.current = audio;
+
+    // Start playing immediately
+    audio.play().catch(err => {
+      console.warn('Background music playback failed:', err);
+    });
+
+    return () => {
+      // Cleanup: Stop music when leaving home screen
+      if (backgroundMusicRef.current) {
+        backgroundMusicRef.current.pause();
+        backgroundMusicRef.current.currentTime = 0;
+        backgroundMusicRef.current = null;
+      }
+    };
   }, []);
 
   // Sprite selection helper function
@@ -375,25 +409,24 @@ function LevelHub({ gameState, onStartLevel, onOpenMemoryRoom, onResetGame }) {
           <div className="level-circle">
             {completedLevels.includes(level.number) ? '✓' : level.number}
           </div>
-          <div className="level-title">
-            <span className="level-icon">{level.icon}</span>
-            <span className="level-name">{level.title}</span>
-          </div>
         </div>
       ))}
 
       {/* Positioned Memory Room */}
       <div
-        className={`positioned-memory-room memory-room ${isMemoryRoomAvailable() ? 'available' : 'locked'}`}
+        className={`level-circle-container ${isMemoryRoomAvailable() ? 'available' : 'locked'}`}
         style={{
           position: 'absolute',
           left: memoryRoom.x,
-          top: memoryRoom.y
+          top: memoryRoom.y,
+          transform: 'translate(-50%, -50%)',
+          zIndex: 25
         }}
         title={`Memory Room ${isMemoryRoomAvailable() ? '(Available)' : '(Complete all levels to unlock)'}`}
       >
-        🏠
-        <div className="memory-room-title">Memory Room</div>
+        <div className="level-circle">
+          🏠
+        </div>
       </div>
 
       {/* Falling Leaves */}
@@ -472,7 +505,7 @@ function LevelHub({ gameState, onStartLevel, onOpenMemoryRoom, onResetGame }) {
       <div className="progress-display">
         <div className="progress-stats">
           <div className="stat">
-            <span className="stat-value">{completedLevels.length}/6</span>
+            <span className="stat-value">{completedLevels.length}/5</span>
             <span className="stat-label">Levels</span>
           </div>
           <div className="stat">
@@ -531,6 +564,38 @@ function LevelHub({ gameState, onStartLevel, onOpenMemoryRoom, onResetGame }) {
           </div>
         )}
       </div>
+
+      {/* Mute Button - Bottom Left */}
+      <button
+        onClick={toggleMute}
+        style={{
+          position: 'fixed',
+          bottom: '20px',
+          left: '20px',
+          padding: '12px 16px',
+          fontSize: '20px',
+          fontFamily: '"Press Start 2P", monospace',
+          background: 'rgba(139, 69, 19, 0.9)',
+          color: 'white',
+          border: '3px solid #fff',
+          borderRadius: '10px',
+          cursor: 'pointer',
+          zIndex: 1000,
+          boxShadow: '0 4px 8px rgba(0, 0, 0, 0.3)',
+          transition: 'all 0.3s'
+        }}
+        onMouseEnter={(e) => {
+          e.target.style.transform = 'scale(1.1)';
+          e.target.style.boxShadow = '0 6px 12px rgba(0, 0, 0, 0.4)';
+        }}
+        onMouseLeave={(e) => {
+          e.target.style.transform = 'scale(1)';
+          e.target.style.boxShadow = '0 4px 8px rgba(0, 0, 0, 0.3)';
+        }}
+        title={isMuted ? 'Unmute music' : 'Mute music'}
+      >
+        {isMuted ? '🔇' : '🔊'}
+      </button>
     </div>
   );
 }

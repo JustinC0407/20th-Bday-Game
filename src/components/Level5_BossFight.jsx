@@ -542,10 +542,6 @@ function Level5_BossFight({ lives, onComplete, onLoseLife, onReturnToHub, onRese
       ctx.fillStyle = gameState.phase === 1 ? COLORS.skyPhase1 : COLORS.skyPhase2;
       ctx.fillRect(0, 0, SCREEN_WIDTH, SCREEN_HEIGHT);
     }
-    ctx.fillStyle = gameState.phase === 1 ? '#555' : '#222';
-    ctx.fillRect(50, SCREEN_HEIGHT - 400, 100, 240);
-    ctx.fillRect(200, SCREEN_HEIGHT - 500, 150, 340);
-    ctx.fillRect(SCREEN_WIDTH - 300, SCREEN_HEIGHT - 450, 120, 290);
 
     // Road
     ctx.fillStyle = '#444'; ctx.fillRect(0, LANE_TOP_Y, SCREEN_WIDTH, LANE_HEIGHT);

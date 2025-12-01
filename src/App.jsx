@@ -10,8 +10,9 @@ import Level3_PuzzleOfUs from './components/Level3_PuzzleOfUs';
 import Level4_StarCollect from './components/Level4_StarCollect';
 import Level5_BossFight from './components/Level5_BossFight';
 import MemoryCapsule from './components/MemoryCapsule';
+import MemoryRoomScreen from './components/MemoryRoomScreen';
 
-const TOTAL_LEVELS = 6;
+const TOTAL_LEVELS = 5;
 
 function App() {
   // Core game state
@@ -250,11 +251,10 @@ function App() {
       
       case 'memory-room':
         return (
-          <div className="memory-room-screen">
-            <h1>🏠 Memory Room</h1>
-            <p>All unlocked memories will be displayed here!</p>
-            <button onClick={returnToHub}>Return to Hub</button>
-          </div>
+          <MemoryRoomScreen
+            unlockedMemories={gameState.unlockedMemories}
+            onReturnToHub={returnToHub}
+          />
         );
       
       default:

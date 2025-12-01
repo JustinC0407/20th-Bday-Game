@@ -54,6 +54,14 @@ function Level4_StarCollect({ lives, onComplete, onLoseLife, onReturnToHub, onRe
     runRight3: null
   });
 
+  // Image references for game objects
+  const itemImageRefs = useRef({
+    star: null,
+    bad1: null,
+    bad2: null,
+    bad3: null
+  });
+
   // Animation state for character
   const [animationState, setAnimationState] = useState('idle');
   const [animationFrame, setAnimationFrame] = useState(0);
@@ -143,6 +151,27 @@ function Level4_StarCollect({ lives, onComplete, onLoseLife, onReturnToHub, onRe
     bg.onload = () => { backgroundRef.current = bg; };
     bg.onerror = () => { console.warn('Failed to load /level_4.png'); };
     bg.src = '/level_4.png';
+  }, []);
+
+  // Load item images
+  useEffect(() => {
+    const itemImages = {
+      star: '/src/assets/photos/level_4_star.png',
+      bad1: '/src/assets/photos/level_4_bad_1.png',
+      bad2: '/src/assets/photos/level_4_bad_2.png',
+      bad3: '/src/assets/photos/level_4_bad_3.png'
+    };
+
+    Object.entries(itemImages).forEach(([key, src]) => {
+      const img = new Image();
+      img.onload = () => {
+        itemImageRefs.current[key] = img;
+      };
+      img.onerror = () => {
+        console.warn(`Failed to load item image: ${src}`);
+      };
+      img.src = src;
+    });
   }, []);
 
   // Initialize background music
@@ -436,26 +465,58 @@ function Level4_StarCollect({ lives, onComplete, onLoseLife, onReturnToHub, onRe
 
     // Stars
     gameState.stars.forEach(star => {
-      ctx.fillStyle = '#FFD700';
-      ctx.fillRect(star.x, star.y, star.width, star.height);
-      ctx.strokeStyle = '#FFA500';
-      ctx.lineWidth = 2;
-      ctx.strokeRect(star.x, star.y, star.width, star.height);
+      if (itemImageRefs.current.star) {
+        // Draw image if loaded
+        ctx.drawImage(
+          itemImageRefs.current.star,
+          star.x,
+          star.y,
+          star.width,
+          star.height
+        );
+      } else {
+        // Fallback: yellow rectangle (current rendering)
+        ctx.fillStyle = '#FFD700';
+        ctx.fillRect(star.x, star.y, star.width, star.height);
+        ctx.strokeStyle = '#FFA500';
+        ctx.lineWidth = 2;
+        ctx.strokeRect(star.x, star.y, star.width, star.height);
+      }
     });
 
     // Obstacles
     gameState.obstacles.forEach(obstacle => {
-      ctx.fillStyle = OBSTACLE_COLORS[obstacle.type];
-      ctx.fillRect(obstacle.x, obstacle.y, obstacle.width, obstacle.height);
-      ctx.strokeStyle = '#000';
-      ctx.lineWidth = 2;
-      ctx.strokeRect(obstacle.x, obstacle.y, obstacle.width, obstacle.height);
-      
-      ctx.fillStyle = '#FFF';
-      ctx.font = '10px Arial';
-      ctx.textAlign = 'center';
-      ctx.textBaseline = 'middle';
-      ctx.fillText(obstacle.type, obstacle.x + obstacle.width/2, obstacle.y + obstacle.height/2);
+      // Map obstacle type to image
+      let imageKey = null;
+      if (obstacle.type === 'RENT') imageKey = 'bad1';
+      else if (obstacle.type === 'HOMEWORK') imageKey = 'bad2';
+      else if (obstacle.type === 'TAXES') imageKey = 'bad3';
+
+      if (imageKey && itemImageRefs.current[imageKey]) {
+        // Draw image 50% bigger but centered on hitbox
+        const visualSize = obstacle.width * 1.5; // 50% bigger (75px)
+        const offset = (visualSize - obstacle.width) / 2; // Center offset (12.5px)
+        ctx.drawImage(
+          itemImageRefs.current[imageKey],
+          obstacle.x - offset,
+          obstacle.y - offset,
+          visualSize,
+          visualSize
+        );
+      } else {
+        // Fallback: colored rectangle with text (current rendering)
+        ctx.fillStyle = OBSTACLE_COLORS[obstacle.type];
+        ctx.fillRect(obstacle.x, obstacle.y, obstacle.width, obstacle.height);
+        ctx.strokeStyle = '#000';
+        ctx.lineWidth = 2;
+        ctx.strokeRect(obstacle.x, obstacle.y, obstacle.width, obstacle.height);
+
+        ctx.fillStyle = '#FFF';
+        ctx.font = '10px Arial';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText(obstacle.type, obstacle.x + obstacle.width/2, obstacle.y + obstacle.height/2);
+      }
     });
 
     // Player (with sprite or fallback)
@@ -587,7 +648,7 @@ function Level4_StarCollect({ lives, onComplete, onLoseLife, onReturnToHub, onRe
     <div className="canvas-container">
       <div className="level-title-header" style={{ color: '#FFD700', textShadow: '2px 2px 4px rgba(0,0,0,0.8)' }}>
         <h2>⭐ Level 4: 20 Stars for Your 20th Birthday</h2>
-        <p>Collect 20 stars, avoid responsibilities!</p>
+        <p>Collect 20 stars, avoid the bad Catalina items!</p>
       </div>
 
       <canvas ref={canvasRef} width={SCREEN_WIDTH} height={SCREEN_HEIGHT} className="game-canvas" />

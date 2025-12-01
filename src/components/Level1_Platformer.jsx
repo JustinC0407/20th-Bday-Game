@@ -203,6 +203,8 @@ function Level1_Platformer({ lives, onComplete, onLoseLife, onReturnToHub, onRes
       // Jump 3: Up and Right (High Peak)
       { x: LEVEL_WIDTH * 0.15, y: LEVEL_HEIGHT - 430, width: LEVEL_WIDTH * 0.04, height: 30 }, 
 
+      { x: LEVEL_WIDTH * 0.2, y: LEVEL_HEIGHT - 275, width: LEVEL_WIDTH * 0.04, height: 30 }, 
+
       // --- THE DESCENT (Precision Falls) ---
       // Long jump to the right from the peak
       { x: LEVEL_WIDTH * 0.25, y: LEVEL_HEIGHT - 350, width: LEVEL_WIDTH * 0.04, height: 30 },
@@ -210,6 +212,7 @@ function Level1_Platformer({ lives, onComplete, onLoseLife, onReturnToHub, onRes
 
       // --- THE GRID (Tight Jumps over pits) ---
       { x: LEVEL_WIDTH * 0.42, y: LEVEL_HEIGHT - 250, width: LEVEL_WIDTH * 0.04, height: 30 }, // Tiny platform
+      { x: LEVEL_WIDTH * 0.44, y: LEVEL_HEIGHT - 400, width: LEVEL_WIDTH * 0.06, height: 30 },
       { x: LEVEL_WIDTH * 0.49, y: LEVEL_HEIGHT - 200, width: LEVEL_WIDTH * 0.04, height: 30 }, // Low platform
       { x: LEVEL_WIDTH * 0.56, y: LEVEL_HEIGHT - 280, width: LEVEL_WIDTH * 0.04, height: 30 }, // High platform
       
@@ -236,24 +239,26 @@ function Level1_Platformer({ lives, onComplete, onLoseLife, onReturnToHub, onRes
       { type: 'spike', x: LEVEL_WIDTH * 0.14, y: LEVEL_HEIGHT - 40, width: 20, height: 40 },
       
       // Spike on the very top peak (Don't overshoot!)
-      { type: 'spike', x: LEVEL_WIDTH * 0.18, y: LEVEL_HEIGHT - 430, width: 16, height: 16 },
+      { type: 'spike', x: LEVEL_WIDTH * 0.18, y: LEVEL_HEIGHT - 445, width: 16, height: 16 },
 
       // Moving Block guarding the descent
       { 
         type: 'moving_block', 
-        x: LEVEL_WIDTH * 0.22, y: LEVEL_HEIGHT - 300, width: 40, height: 40, 
+        x: LEVEL_WIDTH * 0.22, y: LEVEL_HEIGHT - 350, width: 40, height: 40, 
         baseX: LEVEL_WIDTH * 0.22, moveRange: 0, moveOffset: 0, direction: 1,
         vertical: true, verticalRange: 80, verticalY: LEVEL_HEIGHT - 300
       },
 
       // Spikes between "The Grid" platforms
       { type: 'spike', x: LEVEL_WIDTH * 0.45, y: LEVEL_HEIGHT - 40, width: 20, height: 40 },
+      //{ type: 'spike', x: LEVEL_WIDTH * 0.4275, y: LEVEL_HEIGHT - 270, width: 20, height: 20 },
       { type: 'spike', x: LEVEL_WIDTH * 0.52, y: LEVEL_HEIGHT - 40, width: 20, height: 40 },
+      { type: 'spike', x: LEVEL_WIDTH * 0.5, y: LEVEL_HEIGHT - 235, width: 20, height: 40 },
 
       // Interceptor Block in "The Grid"
       { 
         type: 'moving_block', 
-        x: LEVEL_WIDTH * 0.52, y: LEVEL_HEIGHT - 240, width: 30, height: 30, 
+        x: LEVEL_WIDTH * 0.52, y: LEVEL_HEIGHT - 320, width: 30, height: 30, 
         baseX: LEVEL_WIDTH * 0.52, moveRange: 50, moveOffset: 0, direction: 1
       },
 
@@ -291,8 +296,22 @@ function Level1_Platformer({ lives, onComplete, onLoseLife, onReturnToHub, onRes
       // Obstacle 7: Climb Peak Guardian (guards descent from climb peak)
       {
         type: 'moving_block',
-        x: LEVEL_WIDTH * 0.17, y: LEVEL_HEIGHT - 400, width: 30, height: 30,
+        x: LEVEL_WIDTH * 0.17, y: LEVEL_HEIGHT - 500, width: 30, height: 30,
         baseX: LEVEL_WIDTH * 0.17, moveRange: 40, moveOffset: Math.PI / 2, direction: 1,
+        vertical: false
+      },
+
+      {
+        type: 'moving_block',
+        x: LEVEL_WIDTH * 0.17, y: LEVEL_HEIGHT - 400, width: 30, height: 30,
+        baseX: LEVEL_WIDTH * 0.27, moveRange: 40, moveOffset: Math.PI / 2, direction: 1,
+        vertical: false
+      },
+
+      {
+        type: 'moving_block',
+        x: LEVEL_WIDTH * 0.17, y: LEVEL_HEIGHT - 460, width: 30, height: 30,
+        baseX: LEVEL_WIDTH * 0.42, moveRange: 40, moveOffset: 0, direction: 1,
         vertical: false
       },
     ];
@@ -312,7 +331,7 @@ function Level1_Platformer({ lives, onComplete, onLoseLife, onReturnToHub, onRes
       { id: 6, x: LEVEL_WIDTH * 0.32, y: LEVEL_HEIGHT - 290, pattern: 'horizontal', baseX: LEVEL_WIDTH * 0.32, moveOffset: 0 }, // PRECISION: Moving during checkpoint
 
       // The Grid (Precision)
-      { id: 7, x: LEVEL_WIDTH * 0.43, y: LEVEL_HEIGHT - 300, pattern: 'static' }, // EASY: Grid entry
+      { id: 7, x: LEVEL_WIDTH * 0.43, y: LEVEL_HEIGHT - 450, pattern: 'static' }, // EASY: Grid entry
       { id: 8, x: LEVEL_WIDTH * 0.51, y: LEVEL_HEIGHT - 260, pattern: 'static' }, // RISK: In interceptor block path
       { id: 9, x: LEVEL_WIDTH * 0.57, y: LEVEL_HEIGHT - 330, pattern: 'static' }, // High platform
 
@@ -835,8 +854,8 @@ function Level1_Platformer({ lives, onComplete, onLoseLife, onReturnToHub, onRes
   return (
     <div className="canvas-container">
       <div className="level-title-header">
-        <h2>❤️ Level 1: Heart Collect Run (Extreme Mode)</h2>
-        <p>Collect all {TOTAL_HEARTS} hearts! Watch out for guards!</p>
+        <h2>❤️ Level 1: Our First Date</h2>
+        <p>Collect all {TOTAL_HEARTS} hearts! Don't spill the Matcha!</p>
       </div>
 
       <canvas
@@ -855,7 +874,7 @@ function Level1_Platformer({ lives, onComplete, onLoseLife, onReturnToHub, onRes
           <span className="heart-icon">💖</span>
           Lives: {lives}
         </div>
-        <div className="checkpoint-indicator">
+        <div className="checkpoint-indicator" style={{ color: 'white' }}>
           <span className="checkpoint-icon">🚩</span>
           Checkpoint: {gameState.checkpoints.filter(c => c.activated).length}/2
         </div>
