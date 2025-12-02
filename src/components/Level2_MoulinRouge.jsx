@@ -375,8 +375,8 @@ function Level2_MoulinRouge({ lives, onComplete, onLoseLife, onReturnToHub, onRe
   };
 
   const handleReturnToHub = () => onReturnToHub();
-  // ======= DEBUG FUNCTION - COMMENTED OUT =======
-  // const debugWin = () => setGameState(prev => ({ ...prev, hitsCollected: TOTAL_HITS_NEEDED }));
+  // ======= DEBUG FUNCTION - EASY TO REMOVE =======
+  const debugWin = () => setGameState(prev => ({ ...prev, hitsCollected: TOTAL_HITS_NEEDED }));
   // ======= END DEBUG FUNCTION =======
 
   // ============ JSX ============
@@ -398,10 +398,10 @@ function Level2_MoulinRouge({ lives, onComplete, onLoseLife, onReturnToHub, onRe
 
       <button onClick={handleReturnToHub} style={{ position: 'absolute', bottom: '20px', right: '20px', padding: '12px 24px', fontSize: '12px', fontFamily: '"Press Start 2P"', background: '#8B4513', color: '#fff', border: '3px solid #fff', borderRadius: '8px', cursor: 'pointer', zIndex: 999 }}>Return to Hub</button>
 
-      {/* ======= DEBUG BUTTON - COMMENTED OUT ======= */}
-      {/* {!gameState.levelCompleted && (
+      {/* ======= DEBUG BUTTON - EASY TO REMOVE ======= */}
+      {!gameState.levelCompleted && (
         <button onClick={debugWin} style={{ position: 'absolute', top: '100px', right: '20px', background: '#FF0000', color: '#fff', padding: '10px 15px', border: 'none', borderRadius: '5px', cursor: 'pointer', fontFamily: '"Press Start 2P"', fontSize: '10px', zIndex: 1000 }}>🐛 DEBUG: Win</button>
-      )} */}
+      )}
       {/* ======= END DEBUG BUTTON ======= */}
 
       {gameState.completionNotificationTime && Date.now() - gameState.completionNotificationTime < 2000 && (

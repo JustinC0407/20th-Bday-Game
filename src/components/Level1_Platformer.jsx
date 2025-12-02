@@ -746,10 +746,10 @@ function Level1_Platformer({ lives, onComplete, onLoseLife, onReturnToHub, onRes
   }, [gameState, animationState, animationFrame]);
 
   // ============ HELPERS ============
-  // ======= DEBUG FUNCTION - COMMENTED OUT =======
-  // const debugCollectAllHearts = () => {
-  //   setGameState(prevState => ({ ...prevState, heartsCollected: TOTAL_HEARTS }));
-  // };
+  // ======= DEBUG FUNCTION - EASY TO REMOVE =======
+  const debugCollectAllHearts = () => {
+    setGameState(prevState => ({ ...prevState, heartsCollected: TOTAL_HEARTS }));
+  };
   // ======= END DEBUG FUNCTION =======
 
   const handleRetry = () => {
@@ -880,8 +880,8 @@ function Level1_Platformer({ lives, onComplete, onLoseLife, onReturnToHub, onRes
           <span className="checkpoint-icon">🚩</span>
           Checkpoint: {gameState.checkpoints.filter(c => c.activated).length}/2
         </div>
-        {/* ======= DEBUG BUTTON - COMMENTED OUT ======= */}
-        {/* {!gameState.levelCompleted && (
+        {/* ======= DEBUG BUTTON - EASY TO REMOVE ======= */}
+        {!gameState.levelCompleted && (
           <button
             className="debug-button"
             onClick={debugCollectAllHearts}
@@ -900,7 +900,7 @@ function Level1_Platformer({ lives, onComplete, onLoseLife, onReturnToHub, onRes
           >
             🐛 DEBUG: Collect All Hearts
           </button>
-        )} */}
+        )}
         {/* ======= END DEBUG BUTTON ======= */}
       </div>
 

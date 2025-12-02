@@ -633,17 +633,17 @@ function Level4_StarCollect({ lives, onComplete, onLoseLife, onReturnToHub, onRe
     }
   }, [gameState.levelCompleted, gameState.gameOver]);
 
-  // ======= DEBUG FUNCTION - COMMENTED OUT =======
-  // const debugWin = () => {
-  //   starsSpawnedRef.current = TOTAL_STARS;
-  //   setGameState(prev => ({
-  //     ...prev,
-  //     score: STARS_NEEDED,
-  //     starsSpawned: TOTAL_STARS,
-  //     stars: [],
-  //     obstacles: []
-  //   }));
-  // };
+  // ======= DEBUG FUNCTION - EASY TO REMOVE =======
+  const debugWin = () => {
+    starsSpawnedRef.current = TOTAL_STARS;
+    setGameState(prev => ({
+      ...prev,
+      score: STARS_NEEDED,
+      starsSpawned: TOTAL_STARS,
+      stars: [],
+      obstacles: []
+    }));
+  };
   // ======= END DEBUG FUNCTION =======
 
   return (
@@ -667,12 +667,12 @@ function Level4_StarCollect({ lives, onComplete, onLoseLife, onReturnToHub, onRe
         Return to Hub
       </button>
 
-      {/* ======= DEBUG BUTTON - COMMENTED OUT ======= */}
-      {/* {!gameState.levelCompleted && (
+      {/* ======= DEBUG BUTTON - EASY TO REMOVE ======= */}
+      {!gameState.levelCompleted && (
         <button onClick={debugWin} style={{ position: 'absolute', top: '100px', right: '20px', background: 'red', color: 'white' }}>
           🐛 DEBUG WIN
         </button>
-      )} */}
+      )}
       {/* ======= END DEBUG BUTTON ======= */}
 
       {gameState.gameOver && (

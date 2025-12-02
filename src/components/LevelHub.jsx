@@ -4,8 +4,8 @@ import { useState, useRef, useEffect } from 'react';
 function LevelHub({ gameState, onStartLevel, onOpenMemoryRoom, onResetGame }) {
   const [showResetConfirm, setShowResetConfirm] = useState(false);
   const [isMuted, setIsMuted] = useState(false);
-  // ======= DEBUG MODE - COMMENTED OUT =======
-  // const [debugUnlockAll, setDebugUnlockAll] = useState(false);
+  // ======= DEBUG MODE - EASY TO REMOVE =======
+  const [debugUnlockAll, setDebugUnlockAll] = useState(false);
   // ======= END DEBUG MODE =======
   const [character, setCharacter] = useState({
     x: window.innerWidth / 2,
@@ -74,8 +74,8 @@ function LevelHub({ gameState, onStartLevel, onOpenMemoryRoom, onResetGame }) {
 
   // Check if a level is available to play
   const isLevelAvailable = (levelNumber) => {
-    // ======= DEBUG MODE - COMMENTED OUT =======
-    // if (debugUnlockAll) return true; // All levels unlocked in debug mode
+    // ======= DEBUG MODE - EASY TO REMOVE =======
+    if (debugUnlockAll) return true; // All levels unlocked in debug mode
     // ======= END DEBUG MODE =======
     if (levelNumber === 1) return true; // First level always available
     return completedLevels.includes(levelNumber - 1); // Previous level must be completed
@@ -526,8 +526,8 @@ function LevelHub({ gameState, onStartLevel, onOpenMemoryRoom, onResetGame }) {
             >
               🔄 Reset
             </button>
-            {/* ======= DEBUG BUTTON - COMMENTED OUT ======= */}
-            {/* <button
+            {/* ======= DEBUG BUTTON - EASY TO REMOVE ======= */}
+            <button
               onClick={() => setDebugUnlockAll(!debugUnlockAll)}
               style={{
                 position: 'absolute',
@@ -547,7 +547,7 @@ function LevelHub({ gameState, onStartLevel, onOpenMemoryRoom, onResetGame }) {
               title="Toggle debug mode to unlock all levels"
             >
               🐛 {debugUnlockAll ? 'DEBUG: ON' : 'DEBUG: OFF'}
-            </button> */}
+            </button>
             {/* ======= END DEBUG BUTTON ======= */}
           </>
         ) : (
