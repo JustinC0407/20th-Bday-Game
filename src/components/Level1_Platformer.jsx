@@ -581,8 +581,8 @@ function Level1_Platformer({ lives, onComplete, onLoseLife, onReturnToHub, onRes
           setTimeout(() => {
             onComplete({
               title: "How We Met",
-              type: "text",
-              content: "Every moment with you started right here. [Placeholder for intro video/text]"
+              type: "photo",
+              content: "/photos/level_1_win.jpeg"
             });
           }, 500);
         }

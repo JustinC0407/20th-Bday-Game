@@ -8,7 +8,7 @@ const PLAYER_WIDTH = 80;
 const PLAYER_HEIGHT = 80;
 const PLAYER_Y = SCREEN_HEIGHT - 140; // On platform at bottom (adjusted for larger hitbox)
 
-const PLAYER_SPEED = 350; 
+const PLAYER_SPEED = 700; 
 
 const ITEM_SIZE = 50; 
 const TOTAL_STARS = 25;
@@ -384,8 +384,8 @@ function Level4_StarCollect({ lives, onComplete, onLoseLife, onReturnToHub, onRe
             setTimeout(() => {
               onComplete({
                 title: "Look How Far You've Come!",
-                type: "text",
-                content: "Happy 20th Birthday! 🎂"
+                type: "photo",
+                content: "/photos/level_4_win.jpeg"
               });
             }, 500);
           } else {

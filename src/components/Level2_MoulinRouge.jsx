@@ -252,8 +252,8 @@ function Level2_MoulinRouge({ lives, onComplete, onLoseLife, onReturnToHub, onRe
             setTimeout(() => {
               onComplete({
                 title: "Moulin Rouge Memory",
-                type: "text",
-                content: "Every beat of my heart belongs to you. That night at the theater was magical. 💖"
+                type: "photo",
+                content: "/photos/level_2_win.jpeg"
               });
             }, 500);
           } else if (!newState.gameOver) {

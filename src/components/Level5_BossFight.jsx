@@ -289,7 +289,7 @@ function Level5_BossFight({ lives, onComplete, onLoseLife, onReturnToHub, onRese
 
         if (next.boss.health <= 0) {
             next.levelCompleted = true; next.boss.health = 0;
-            setTimeout(() => { onComplete({ title: "Chaos Subsided", type: "text", content: "NYC is crazy, but we conquered it together!" }); }, 2500);
+            setTimeout(() => { onComplete({ title: "Chaos Subsided", type: "photo", content: "/photos/level_5_win.jpeg" }); }, 2500);
             return next;
         }
 

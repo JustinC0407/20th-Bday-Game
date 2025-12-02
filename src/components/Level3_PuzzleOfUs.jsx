@@ -417,8 +417,8 @@ function Level3_PuzzleOfUs({ lives, onComplete, onLoseLife, onReturnToHub, onRes
       setTimeout(() => {
         onComplete({
           title: "Puzzle of Us",
-          type: "text",
-          content: "A little piece of my heart for every piece of this puzzle. [Placeholder for special photo - user will add later]"
+          type: "photo",
+          content: "/photos/level_3_win.jpeg"
         });
       }, 2000);
     }

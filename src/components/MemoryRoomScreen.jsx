@@ -4,11 +4,11 @@ const CORRECT_PASSWORD = "iloveyou";
 
 // All 5 levels with default data
 const ALL_LEVELS = [
-  { level: 1, title: 'Level 1 Memory', type: 'text' },
-  { level: 2, title: 'Level 2 Memory', type: 'photo' },
-  { level: 3, title: 'Level 3 Memory', type: 'text' },
-  { level: 4, title: 'Level 4 Memory', type: 'text' },
-  { level: 5, title: 'Level 5 Memory', type: 'text' }
+  { level: 1, title: 'Level 1 Memory', type: 'photo', content: '/photos/level_1_win.jpeg' },
+  { level: 2, title: 'Level 2 Memory', type: 'photo', content: '/photos/level_2_win.jpeg' },
+  { level: 3, title: 'Level 3 Memory', type: 'photo', content: '/photos/level_3_win.jpeg' },
+  { level: 4, title: 'Level 4 Memory', type: 'photo', content: '/photos/level_4_win.jpeg' },
+  { level: 5, title: 'Level 5 Memory', type: 'photo', content: '/photos/level_5_win.jpeg' }
 ];
 
 function MemoryRoomScreen({ unlockedMemories, onReturnToHub }) {
@@ -85,15 +85,50 @@ function MemoryRoomScreen({ unlockedMemories, onReturnToHub }) {
               </div>
               <div className="memory-card-content">
                 <h4>{memoryData.title}</h4>
-                <p className="memory-preview">{memoryData.content || 'Memory from Level ' + levelData.level}</p>
+                {memoryData.type === 'photo' && (
+                  <img
+                    src={memoryData.content}
+                    alt={memoryData.title}
+                    style={{
+                      width: '200px',
+                      height: '200px',
+                      objectFit: 'cover',
+                      borderRadius: '8px',
+                      marginBottom: '10px',
+                      display: 'block',
+                      marginLeft: 'auto',
+                      marginRight: 'auto'
+                    }}
+                    onError={(e) => {
+                      console.warn(`Failed to load thumbnail: ${memoryData.content}`);
+                      e.target.style.display = 'none';
+                    }}
+                  />
+                )}
+                <p className="memory-preview">{memoryData.type === 'photo' ? '❤️ Memory Photo' : (memoryData.content || 'Memory from Level ' + levelData.level)}</p>
               </div>
             </div>
           );
         })}
       </div>
 
-      <button onClick={onReturnToHub} className="hub-button">
-        Return to Hub
+      <button
+        onClick={onReturnToHub}
+        className="hub-button"
+        style={{
+          marginTop: '30px',
+          padding: '15px 40px',
+          fontSize: '16px',
+          fontFamily: '"Press Start 2P"',
+          backgroundColor: '#FF6B9D',
+          color: 'white',
+          border: 'none',
+          borderRadius: '8px',
+          cursor: 'pointer',
+          boxShadow: '0 4px 6px rgba(0,0,0,0.3)'
+        }}
+      >
+        ❤️ Return to Hub ❤️
       </button>
     </div>
   );

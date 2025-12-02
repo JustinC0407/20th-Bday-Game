@@ -41,11 +41,23 @@ function MemoryCapsule({ memory, onClose }) {
 
           {memory.type === 'photo' && (
             <div className="memory-photo">
-              <div className="memory-placeholder">
-                <span className="placeholder-icon">📸</span>
-                <p>Photo placeholder</p>
-                <p>{memory.content}</p>
-              </div>
+              <img
+                src={memory.content}
+                alt={memory.title}
+                style={{
+                  maxWidth: '100%',
+                  maxHeight: '400px',
+                  borderRadius: '8px',
+                  objectFit: 'contain',
+                  display: 'block',
+                  margin: '0 auto'
+                }}
+                onError={(e) => {
+                  console.warn(`Failed to load image: ${memory.content}`);
+                  e.target.style.display = 'none';
+                  e.target.parentElement.innerHTML += `<div class="memory-placeholder"><span style="font-size:80px">📸</span><p>Photo: ${memory.content}</p></div>`;
+                }}
+              />
             </div>
           )}
 
