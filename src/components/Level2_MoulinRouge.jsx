@@ -210,6 +210,10 @@ function Level2_MoulinRouge({ lives, onComplete, onLoseLife, onReturnToHub, onRe
   useEffect(() => {
     if (!gameState.gameStarted || gameState.gameOver) return;
 
+    // FIX FOR REACT STRICT MODE (LOCALHOST SPEED BUG)
+    // We use a local variable to track the animation frame for THIS specific effect instance
+    let animationFrameId;
+
     const gameLoop = (currentTime) => {
       // DELTA TIME FIX: Calculate actual time elapsed since last frame
       const deltaTime = (currentTime - lastFrameTimeRef.current) / 1000; // in seconds
@@ -368,14 +372,17 @@ function Level2_MoulinRouge({ lives, onComplete, onLoseLife, onReturnToHub, onRe
         return newState;
       });
 
-      animationRef.current = requestAnimationFrame(gameLoop);
+      // Update the LOCAL animation frame ID
+      animationFrameId = requestAnimationFrame(gameLoop);
+      animationRef.current = animationFrameId; // Sync to global ref just in case
     };
 
     gameLoop(performance.now());
 
+    // CLEANUP: Cancel the specific frame ID for this instance
     return () => {
-      if (animationRef.current) {
-        cancelAnimationFrame(animationRef.current);
+      if (animationFrameId) {
+        cancelAnimationFrame(animationFrameId);
       }
     };
   }, [gameState.gameStarted, gameState.gameOver]);
