@@ -585,22 +585,22 @@ function Level3_PuzzleOfUs({ lives, onComplete, onLoseLife, onReturnToHub, onRes
     };
   }, [gameState, particles]);
 
-  // ======= DEBUG FUNCTION - EASY TO REMOVE =======
-  const debugCompletePuzzle = () => {
-    const completedTiles = tilesRef.current.map(tile => ({
-      ...tile,
-      x: GRID_ORIGIN.x + tile.gridX * TILE_SIZE,
-      y: GRID_ORIGIN.y + tile.gridY * TILE_SIZE,
-      isLocked: true
-    }));
+  // ======= DEBUG FUNCTION - COMMENTED OUT =======
+  // const debugCompletePuzzle = () => {
+  //   const completedTiles = tilesRef.current.map(tile => ({
+  //     ...tile,
+  //     x: GRID_ORIGIN.x + tile.gridX * TILE_SIZE,
+  //     y: GRID_ORIGIN.y + tile.gridY * TILE_SIZE,
+  //     isLocked: true
+  //   }));
 
-    tilesRef.current = completedTiles;
-    setGameState(prev => ({
-      ...prev,
-      tiles: completedTiles,
-      correctCount: 25
-    }));
-  };
+  //   tilesRef.current = completedTiles;
+  //   setGameState(prev => ({
+  //     ...prev,
+  //     tiles: completedTiles,
+  //     correctCount: 25
+  //   }));
+  // };
   // ======= END DEBUG FUNCTION =======
 
   return (
@@ -629,8 +629,8 @@ function Level3_PuzzleOfUs({ lives, onComplete, onLoseLife, onReturnToHub, onRes
       >
         Return to Hub
       </button>
-      {/* ======= DEBUG BUTTON - EASY TO REMOVE ======= */}
-      {!gameState.levelCompleted && (
+      {/* ======= DEBUG BUTTON - COMMENTED OUT ======= */}
+      {/* {!gameState.levelCompleted && (
         <button
           onClick={debugCompletePuzzle}
           style={{
@@ -649,7 +649,7 @@ function Level3_PuzzleOfUs({ lives, onComplete, onLoseLife, onReturnToHub, onRes
         >
           🐛 DEBUG: Complete Puzzle
         </button>
-      )}
+      )} */}
       {/* ======= END DEBUG BUTTON ======= */}
     </>
   );

@@ -633,16 +633,18 @@ function Level4_StarCollect({ lives, onComplete, onLoseLife, onReturnToHub, onRe
     }
   }, [gameState.levelCompleted, gameState.gameOver]);
 
-  const debugWin = () => {
-    starsSpawnedRef.current = TOTAL_STARS;
-    setGameState(prev => ({
-      ...prev,
-      score: STARS_NEEDED,
-      starsSpawned: TOTAL_STARS,
-      stars: [],
-      obstacles: []
-    }));
-  };
+  // ======= DEBUG FUNCTION - COMMENTED OUT =======
+  // const debugWin = () => {
+  //   starsSpawnedRef.current = TOTAL_STARS;
+  //   setGameState(prev => ({
+  //     ...prev,
+  //     score: STARS_NEEDED,
+  //     starsSpawned: TOTAL_STARS,
+  //     stars: [],
+  //     obstacles: []
+  //   }));
+  // };
+  // ======= END DEBUG FUNCTION =======
 
   return (
     <div className="canvas-container">
@@ -665,11 +667,13 @@ function Level4_StarCollect({ lives, onComplete, onLoseLife, onReturnToHub, onRe
         Return to Hub
       </button>
 
-      {!gameState.levelCompleted && (
+      {/* ======= DEBUG BUTTON - COMMENTED OUT ======= */}
+      {/* {!gameState.levelCompleted && (
         <button onClick={debugWin} style={{ position: 'absolute', top: '100px', right: '20px', background: 'red', color: 'white' }}>
           🐛 DEBUG WIN
         </button>
-      )}
+      )} */}
+      {/* ======= END DEBUG BUTTON ======= */}
 
       {gameState.gameOver && (
         <div className="game-over-overlay" style={{
