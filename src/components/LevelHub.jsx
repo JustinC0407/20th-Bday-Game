@@ -114,13 +114,13 @@ function LevelHub({ gameState, onStartLevel, onOpenMemoryRoom, onResetGame }) {
   // Load player sprites
   useEffect(() => {
     const spriteFiles = {
-      standing: '/src/assets/sprites/standing.png',
-      runLeft1: '/src/assets/sprites/runleft1.png',
-      runLeft2: '/src/assets/sprites/runleft2.png',
-      runLeft3: '/src/assets/sprites/runleft3.png',
-      runRight1: '/src/assets/sprites/runright1.png',
-      runRight2: '/src/assets/sprites/runright2.png',
-      runRight3: '/src/assets/sprites/runright3.png'
+      standing: '/sprites/standing.png',
+      runLeft1: '/sprites/runleft1.png',
+      runLeft2: '/sprites/runleft2.png',
+      runLeft3: '/sprites/runleft3.png',
+      runRight1: '/sprites/runright1.png',
+      runRight2: '/sprites/runright2.png',
+      runRight3: '/sprites/runright3.png'
     };
 
     Object.entries(spriteFiles).forEach(([key, src]) => {
@@ -137,7 +137,7 @@ function LevelHub({ gameState, onStartLevel, onOpenMemoryRoom, onResetGame }) {
 
   // Load and play background music
   useEffect(() => {
-    const audio = new Audio('/src/assets/audio/home.mp3');
+    const audio = new Audio('/audio/home.mp3');
     audio.loop = true;
     audio.volume = 0.1; // 10% volume (subtle ambient background)
     audio.preload = 'auto';

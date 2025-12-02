@@ -93,7 +93,7 @@ function Level2_MoulinRouge({ lives, onComplete, onLoseLife, onReturnToHub, onRe
   // ============ AUDIO SETUP ============
   // Audio initialization
   useEffect(() => {
-    const audio = new Audio('/src/assets/audio/level_2.mp3');
+    const audio = new Audio('/audio/level_2.mp3');
     audio.loop = true;
     audio.volume = 0.7; // 70% volume
     audio.preload = 'auto';

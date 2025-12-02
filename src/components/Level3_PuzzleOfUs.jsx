@@ -164,7 +164,7 @@ function Level3_PuzzleOfUs({ lives, onComplete, onLoseLife, onReturnToHub, onRes
 
   // Load lock sound
   useEffect(() => {
-    const audio = new Audio('/src/assets/audio/lock_click.mp3');
+    const audio = new Audio('/audio/lock_click.mp3');
     audio.volume = 0.5;
     audio.preload = 'auto';
     lockSoundRef.current = audio;
@@ -178,7 +178,7 @@ function Level3_PuzzleOfUs({ lives, onComplete, onLoseLife, onReturnToHub, onRes
 
   // Initialize background music
   useEffect(() => {
-    const audio = new Audio('/src/assets/audio/level_3.mp3');
+    const audio = new Audio('/audio/level_3.mp3');
     audio.loop = true;
     audio.volume = 0.3; // 30% volume (quiet, thinking atmosphere)
     audio.preload = 'auto';

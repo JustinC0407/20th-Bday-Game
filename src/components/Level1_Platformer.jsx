@@ -74,13 +74,13 @@ function Level1_Platformer({ lives, onComplete, onLoseLife, onReturnToHub, onRes
   // ============ ASSET LOADING ============
   useEffect(() => {
     const spriteFiles = {
-      standing: '/src/assets/sprites/standing.png',
-      runLeft1: '/src/assets/sprites/runleft1.png',
-      runLeft2: '/src/assets/sprites/runleft2.png',
-      runLeft3: '/src/assets/sprites/runleft3.png',
-      runRight1: '/src/assets/sprites/runright1.png',
-      runRight2: '/src/assets/sprites/runright2.png',
-      runRight3: '/src/assets/sprites/runright3.png',
+      standing: '/sprites/standing.png',
+      runLeft1: '/sprites/runleft1.png',
+      runLeft2: '/sprites/runleft2.png',
+      runLeft3: '/sprites/runleft3.png',
+      runRight1: '/sprites/runright1.png',
+      runRight2: '/sprites/runright2.png',
+      runRight3: '/sprites/runright3.png',
       heart: '/heart.png'
     };
 
@@ -104,12 +104,12 @@ function Level1_Platformer({ lives, onComplete, onLoseLife, onReturnToHub, onRes
       console.warn('Failed to load grass block texture');
       grassBlockRef.current = null;
     };
-    grassBlock.src = '/src/assets/photos/level_1_grass_block.png';
+    grassBlock.src = '/photos/level_1_grass_block.png';
   }, []);
 
   // Initialize background music
   useEffect(() => {
-    const audio = new Audio('/src/assets/audio/level_1.mp3');
+    const audio = new Audio('/audio/level_1.mp3');
     audio.loop = true;
     audio.volume = 0.3; // 30% volume (quiet background music)
     audio.preload = 'auto';
@@ -127,7 +127,7 @@ function Level1_Platformer({ lives, onComplete, onLoseLife, onReturnToHub, onRes
 
   // Load jump sound
   useEffect(() => {
-    const audio = new Audio('/src/assets/audio/level_1_jump.mp3');
+    const audio = new Audio('/audio/level_1_jump.mp3');
     audio.volume = 0.2; // 30% volume
     audio.preload = 'auto';
     jumpSoundRef.current = audio;
@@ -141,7 +141,7 @@ function Level1_Platformer({ lives, onComplete, onLoseLife, onReturnToHub, onRes
 
   // Load heart pickup sound
   useEffect(() => {
-    const audio = new Audio('/src/assets/audio/level_1_heart.mp3');
+    const audio = new Audio('/audio/level_1_heart.mp3');
     audio.volume = 0.5; // 70% volume (celebratory)
     audio.preload = 'auto';
     heartPickupSoundRef.current = audio;
@@ -155,7 +155,7 @@ function Level1_Platformer({ lives, onComplete, onLoseLife, onReturnToHub, onRes
 
   // Load death sound
   useEffect(() => {
-    const audio = new Audio('/src/assets/audio/level_1_death.mp3');
+    const audio = new Audio('/audio/level_1_death.mp3');
     audio.volume = 0.5; // 50% volume (not aggressive)
     audio.preload = 'auto';
     deathSoundRef.current = audio;

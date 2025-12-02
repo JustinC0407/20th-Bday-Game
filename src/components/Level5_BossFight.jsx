@@ -108,13 +108,13 @@ function Level5_BossFight({ lives, onComplete, onLoseLife, onReturnToHub, onRese
       return img;
     };
     spriteRefs.current = {
-      standing: loadImg('/src/assets/sprites/standing.png'),
-      runLeft1: loadImg('/src/assets/sprites/runleft1.png'),
-      runLeft2: loadImg('/src/assets/sprites/runleft2.png'),
-      runLeft3: loadImg('/src/assets/sprites/runleft3.png'),
-      runRight1: loadImg('/src/assets/sprites/runright1.png'),
-      runRight2: loadImg('/src/assets/sprites/runright2.png'),
-      runRight3: loadImg('/src/assets/sprites/runright3.png')
+      standing: loadImg('/sprites/standing.png'),
+      runLeft1: loadImg('/sprites/runleft1.png'),
+      runLeft2: loadImg('/sprites/runleft2.png'),
+      runLeft3: loadImg('/sprites/runleft3.png'),
+      runRight1: loadImg('/sprites/runright1.png'),
+      runRight2: loadImg('/sprites/runright2.png'),
+      runRight3: loadImg('/sprites/runright3.png')
     };
   }, []);
 
@@ -145,19 +145,19 @@ function Level5_BossFight({ lives, onComplete, onLoseLife, onReturnToHub, onRese
     const bird = new Image();
     bird.onload = () => { birdImageRef.current = bird; };
     bird.onerror = () => { console.warn('Failed to load bird image'); };
-    bird.src = '/src/assets/photos/level_5_bird.png';
+    bird.src = '/photos/level_5_bird.png';
 
     // Car left image
     const carLeft = new Image();
     carLeft.onload = () => { carLeftImageRef.current = carLeft; };
     carLeft.onerror = () => { console.warn('Failed to load car left image'); };
-    carLeft.src = '/src/assets/photos/level_5_car_face_left.png';
+    carLeft.src = '/photos/level_5_car_face_left.png';
 
     // Car right image
     const carRight = new Image();
     carRight.onload = () => { carRightImageRef.current = carRight; };
     carRight.onerror = () => { console.warn('Failed to load car right image'); };
-    carRight.src = '/src/assets/photos/level_5_car_face_right.png';
+    carRight.src = '/photos/level_5_car_face_right.png';
   }, []);
 
   // Load boss images
@@ -166,44 +166,44 @@ function Level5_BossFight({ lives, onComplete, onLoseLife, onReturnToHub, onRese
     const bossPhase1 = new Image();
     bossPhase1.onload = () => { bossPhase1ImageRef.current = bossPhase1; };
     bossPhase1.onerror = () => { console.warn('Failed to load boss phase 1 image'); };
-    bossPhase1.src = '/src/assets/photos/level_5_boss_phase_1.png';
+    bossPhase1.src = '/photos/level_5_boss_phase_1.png';
 
     // Boss Phase 2 image
     const bossPhase2 = new Image();
     bossPhase2.onload = () => { bossPhase2ImageRef.current = bossPhase2; };
     bossPhase2.onerror = () => { console.warn('Failed to load boss phase 2 image'); };
-    bossPhase2.src = '/src/assets/photos/level_5_boss_phase_2.png';
+    bossPhase2.src = '/photos/level_5_boss_phase_2.png';
 
     // Boss Dead image
     const bossDead = new Image();
     bossDead.onload = () => { bossDeadImageRef.current = bossDead; };
     bossDead.onerror = () => { console.warn('Failed to load boss dead image'); };
-    bossDead.src = '/src/assets/photos/level_5_boss_dead.png';
+    bossDead.src = '/photos/level_5_boss_dead.png';
   }, []);
 
   // Load audio files
   useEffect(() => {
     // Background music
-    const bgMusic = new Audio('/src/assets/audio/level_5.mp3');
+    const bgMusic = new Audio('/audio/level_5.mp3');
     bgMusic.loop = true;
     bgMusic.volume = 0.3; // 30% volume (like Level 1 platformer)
     bgMusic.preload = 'auto';
     backgroundMusicRef.current = bgMusic;
 
     // Attack sound
-    const attackSound = new Audio('/src/assets/audio/level_5_attack.mp3');
+    const attackSound = new Audio('/audio/level_5_attack.mp3');
     attackSound.volume = 0.5; // 50% volume
     attackSound.preload = 'auto';
     attackSoundRef.current = attackSound;
 
     // Bird spawn sound
-    const birdSound = new Audio('/src/assets/audio/level_5_bird.mp3');
+    const birdSound = new Audio('/audio/level_5_bird.mp3');
     birdSound.volume = 0.4; // 40% volume
     birdSound.preload = 'auto';
     birdSoundRef.current = birdSound;
 
     // Car spawn sound
-    const carSound = new Audio('/src/assets/audio/level_5_car.mp3');
+    const carSound = new Audio('/audio/level_5_car.mp3');
     carSound.volume = 0.5; // 50% volume
     carSound.preload = 'auto';
     carSoundRef.current = carSound;

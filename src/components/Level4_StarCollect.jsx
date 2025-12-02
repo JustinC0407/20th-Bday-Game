@@ -124,13 +124,13 @@ function Level4_StarCollect({ lives, onComplete, onLoseLife, onReturnToHub, onRe
   // Load character sprites
   useEffect(() => {
     const spriteFiles = {
-      standing: '/src/assets/sprites/standing.png',
-      runLeft1: '/src/assets/sprites/runleft1.png',
-      runLeft2: '/src/assets/sprites/runleft2.png',
-      runLeft3: '/src/assets/sprites/runleft3.png',
-      runRight1: '/src/assets/sprites/runright1.png',
-      runRight2: '/src/assets/sprites/runright2.png',
-      runRight3: '/src/assets/sprites/runright3.png'
+      standing: '/sprites/standing.png',
+      runLeft1: '/sprites/runleft1.png',
+      runLeft2: '/sprites/runleft2.png',
+      runLeft3: '/sprites/runleft3.png',
+      runRight1: '/sprites/runright1.png',
+      runRight2: '/sprites/runright2.png',
+      runRight3: '/sprites/runright3.png'
     };
 
     Object.entries(spriteFiles).forEach(([key, src]) => {
@@ -156,10 +156,10 @@ function Level4_StarCollect({ lives, onComplete, onLoseLife, onReturnToHub, onRe
   // Load item images
   useEffect(() => {
     const itemImages = {
-      star: '/src/assets/photos/level_4_star.png',
-      bad1: '/src/assets/photos/level_4_bad_1.png',
-      bad2: '/src/assets/photos/level_4_bad_2.png',
-      bad3: '/src/assets/photos/level_4_bad_3.png'
+      star: '/photos/level_4_star.png',
+      bad1: '/photos/level_4_bad_1.png',
+      bad2: '/photos/level_4_bad_2.png',
+      bad3: '/photos/level_4_bad_3.png'
     };
 
     Object.entries(itemImages).forEach(([key, src]) => {
@@ -176,7 +176,7 @@ function Level4_StarCollect({ lives, onComplete, onLoseLife, onReturnToHub, onRe
 
   // Initialize background music
   useEffect(() => {
-    const audio = new Audio('/src/assets/audio/level_4.mp3');
+    const audio = new Audio('/audio/level_4.mp3');
     audio.loop = true;
     audio.volume = 0.4; // 40% volume (upbeat but not overpowering)
     audio.preload = 'auto';
