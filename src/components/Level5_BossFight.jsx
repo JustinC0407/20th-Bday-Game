@@ -4,10 +4,10 @@ import React, { useRef, useState, useEffect } from 'react';
 const SCREEN_WIDTH = typeof window !== 'undefined' ? window.innerWidth : 1000;
 const SCREEN_HEIGHT = typeof window !== 'undefined' ? window.innerHeight : 800;
 
-// Game Settings
-const PLAYER_SPEED = 375; 
-const PROJECTILE_SPEED = 700;
-const FIRE_RATE = 200; 
+// Game Settings (DOUBLED VALUES to match "Fast" feel)
+const PLAYER_SPEED = 750;        // Was 375
+const PROJECTILE_SPEED = 1400;   // Was 700
+const FIRE_RATE = 100;           // Was 200 (Lower is faster)
 const BOSS_MAX_HEALTH = 50;
 
 // Lane Settings
@@ -90,17 +90,14 @@ function Level5_BossFight({ lives, onComplete, onLoseLife, onReturnToHub, onRese
       runRight1: loadImg('/sprites/runright1.png'), runRight2: loadImg('/sprites/runright2.png'), runRight3: loadImg('/sprites/runright3.png')
     };
     
-    // Backgrounds
     const dayBg = new Image(); dayBg.onload = () => { backgroundDayRef.current = dayBg; }; dayBg.src = '/level_5_day.png';
     const nightBg = new Image(); nightBg.onload = () => { backgroundNightRef.current = nightBg; }; nightBg.src = '/level_5_night.png';
     const road = new Image(); road.onload = () => { roadOverlayRef.current = road; }; road.src = '/level_5_road.png';
 
-    // Hazards
     const bird = new Image(); bird.onload = () => { birdImageRef.current = bird; }; bird.src = '/photos/level_5_bird.png';
     const carLeft = new Image(); carLeft.onload = () => { carLeftImageRef.current = carLeft; }; carLeft.src = '/photos/level_5_car_face_left.png';
     const carRight = new Image(); carRight.onload = () => { carRightImageRef.current = carRight; }; carRight.src = '/photos/level_5_car_face_right.png';
 
-    // Boss
     const bossPhase1 = new Image(); bossPhase1.onload = () => { bossPhase1ImageRef.current = bossPhase1; }; bossPhase1.src = '/photos/level_5_boss_phase_1.png';
     const bossPhase2 = new Image(); bossPhase2.onload = () => { bossPhase2ImageRef.current = bossPhase2; }; bossPhase2.src = '/photos/level_5_boss_phase_2.png';
     const bossDead = new Image(); bossDead.onload = () => { bossDeadImageRef.current = bossDead; }; bossDead.src = '/photos/level_5_boss_dead.png';
@@ -131,7 +128,6 @@ function Level5_BossFight({ lives, onComplete, onLoseLife, onReturnToHub, onRese
     return () => clearInterval(syncInterval);
   }, [animationState, animationFrame]);
 
-  // Game Over Check
   useEffect(() => {
     if (lives <= 0 && gameState.gameStarted && !gameState.levelCompleted && !gameState.gameOver) {
       setGameState(prev => ({ ...prev, gameOver: true }));
@@ -147,7 +143,6 @@ function Level5_BossFight({ lives, onComplete, onLoseLife, onReturnToHub, onRese
     }
   };
 
-  // Input Handling
   useEffect(() => {
     const handleKeyDown = (e) => keysRef.current[e.code] = true;
     const handleKeyUp = (e) => keysRef.current[e.code] = false;
@@ -155,7 +150,6 @@ function Level5_BossFight({ lives, onComplete, onLoseLife, onReturnToHub, onRese
     return () => { window.removeEventListener('keydown', handleKeyDown); window.removeEventListener('keyup', handleKeyUp); };
   }, []);
 
-  // Helpers
   const checkCollision = (rect1, rect2) => {
     return (rect1.x < rect2.x + rect2.w && rect1.x + rect1.w > rect2.x && rect1.y < rect2.y + rect2.h && rect1.y + rect1.h > rect2.y);
   };
@@ -192,14 +186,14 @@ function Level5_BossFight({ lives, onComplete, onLoseLife, onReturnToHub, onRese
     if ((gameState.levelCompleted || gameState.gameOver) && backgroundMusicRef.current) fadeOutMusic();
   }, [gameState.levelCompleted, gameState.gameOver]);
 
-  // Spawn Logic
+  // ============ SPAWN LOGIC (DOUBLED SPEEDS) ============
   const spawnAttack = (currentPhase, currentHazards) => {
     const attacks = [];
     const isGroundBlocked = currentHazards.some(h => h.type === 'taxi' || h.type === 'shockwave');
     let rand = isGroundBlocked ? 0.6 : Math.random();
     
-    if (rand < 0.5) { // Taxi
-      const speed = currentPhase === 1 ? 350 : 450;
+    if (rand < 0.5) { // Taxi (Speed doubled)
+      const speed = currentPhase === 1 ? 700 : 900; 
       const count = currentPhase === 1 ? 1 : 2;
       const batchLane = Math.random() > 0.5 ? 1 : 2;
       const fromLeft = Math.random() > 0.5;
@@ -207,24 +201,26 @@ function Level5_BossFight({ lives, onComplete, onLoseLife, onReturnToHub, onRese
       for(let i=0; i<count; i++) {
         attacks.push({
           type: 'taxi', lane: batchLane, x: fromLeft ? -150 - i*250 : SCREEN_WIDTH + 150 + i*250,
-          y: yPos, w: 100, h: 40, vx: fromLeft ? speed : -speed, vy: 0, spawnTimer: 1.5, spawnSide: fromLeft ? 'left' : 'right'
+          y: yPos, w: 100, h: 40, vx: fromLeft ? speed : -speed, vy: 0, 
+          spawnTimer: 0.75, spawnSide: fromLeft ? 'left' : 'right' // Timer halved
         });
       }
       if (carSoundRef.current) { carSoundRef.current.currentTime = 0; carSoundRef.current.play().catch(console.warn); }
-    } else if (rand < 0.8) { // Pigeon
+    } else if (rand < 0.8) { // Pigeon (Speed doubled)
       const count = currentPhase === 1 ? 2 : 3;
       for(let i=0; i<count; i++) {
         attacks.push({
           type: 'pigeon', lane: 0, x: Math.random() * SCREEN_WIDTH, y: -50 - (Math.random() * 200),
-          w: 30, h: 30, vx: (Math.random()-0.5)*200, vy: currentPhase === 1 ? 200 : 300
+          w: 30, h: 30, vx: (Math.random()-0.5)*400, vy: currentPhase === 1 ? 400 : 600
         });
       }
       if (birdSoundRef.current) { birdSoundRef.current.currentTime = 0; birdSoundRef.current.play().catch(console.warn); }
-    } else { // Shockwave
+    } else { // Shockwave (Timers halved)
       const targetLane = Math.random() > 0.5 ? 1 : 2;
       attacks.push({
         type: 'shockwave', lane: targetLane, x: 0, y: targetLane === 1 ? LANE_BOTTOM_Y : LANE_TOP_Y,
-        w: SCREEN_WIDTH, h: LANE_HEIGHT, vx: 0, vy: 0, warning: 2.0, active: 0.5 
+        w: SCREEN_WIDTH, h: LANE_HEIGHT, vx: 0, vy: 0, 
+        warning: 1.0, active: 0.25 
       });
     }
     return attacks;
@@ -234,7 +230,7 @@ function Level5_BossFight({ lives, onComplete, onLoseLife, onReturnToHub, onRese
   useEffect(() => {
     if (!gameState.gameStarted || gameState.gameOver || gameState.levelCompleted) return;
 
-    let animationFrameId = null;
+    let animationFrameId;
     lastTimeRef.current = performance.now();
 
     const loop = (time) => {
@@ -248,7 +244,7 @@ function Level5_BossFight({ lives, onComplete, onLoseLife, onReturnToHub, onRese
       let shouldSpawn = false;
       if (attackTimerRef.current <= 0) shouldSpawn = true;
 
-      // 2. Shooting Logic (FIX: Moved OUTSIDE setGameState to fix disappearing projectiles)
+      // 2. Shooting Logic (FIX: Moved OUTSIDE to fix disappearing projectiles)
       let shouldShoot = false;
       if (keysRef.current['Space'] && time - lastShotTimeRef.current > FIRE_RATE) {
         lastShotTimeRef.current = time;
@@ -278,7 +274,7 @@ function Level5_BossFight({ lives, onComplete, onLoseLife, onReturnToHub, onRese
         if (keysRef.current['KeyS'] || keysRef.current['ArrowDown']) next.player.lane = 1;
         next.player.y = next.player.lane === 1 ? LANE_BOTTOM_Y + 15 : LANE_TOP_Y + 15;
 
-        // Apply Shooting (from flag calculated outside)
+        // Apply Shooting
         if (shouldShoot) {
            next.projectiles.push({
              x: next.player.x + PLAYER_SIZE.w/2 - PROJECTILE_SIZE.w/2, y: next.player.y,
@@ -286,8 +282,8 @@ function Level5_BossFight({ lives, onComplete, onLoseLife, onReturnToHub, onRese
            });
         }
 
-        // Boss Movement
-        next.boss.x += 150 * next.boss.dir * dt;
+        // Boss Movement (Doubled Speed)
+        next.boss.x += 300 * next.boss.dir * dt; 
         if (next.boss.x <= 50 || next.boss.x + BOSS_SIZE.w >= SCREEN_WIDTH - 50) next.boss.dir *= -1;
         if (next.boss.health <= BOSS_MAX_HEALTH / 2 && next.phase === 1) next.phase = 2;
 
@@ -297,9 +293,9 @@ function Level5_BossFight({ lives, onComplete, onLoseLife, onReturnToHub, onRese
             return next;
         }
 
-        // Apply Spawning (from flag calculated outside)
+        // Apply Spawning
         if (shouldSpawn) {
-           attackTimerRef.current = next.phase === 1 ? 1.8 : 1.2; 
+           attackTimerRef.current = next.phase === 1 ? 0.9 : 0.6; // Timers Halved
            next.hazards.push(...spawnAttack(next.phase, next.hazards));
         }
 
