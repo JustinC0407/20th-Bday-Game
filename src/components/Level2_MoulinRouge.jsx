@@ -228,7 +228,7 @@ function Level2_MoulinRouge({ lives, onComplete, onLoseLife, onReturnToHub, onRe
         // 1. Spawn beats (single or double) - TIME-BASED
         timeSinceLastBeatRef.current += deltaTime;
         if (timeSinceLastBeatRef.current >= BEAT_INTERVAL_SECONDS) {
-          timeSinceLastBeatRef.current -= BEAT_INTERVAL_SECONDS;
+          timeSinceLastBeatRef.current = 0; // Reset to prevent drift
           // Calculate double note chance (10% -> 30% over 60 seconds)
           const timeElapsed = TIME_LIMIT - newState.timeRemaining;
           const progressRatio = timeElapsed / TIME_LIMIT;
@@ -341,8 +341,9 @@ function Level2_MoulinRouge({ lives, onComplete, onLoseLife, onReturnToHub, onRe
         // 4. Update timer - TIME-BASED
         timeSinceLastSecondRef.current += deltaTime;
         if (timeSinceLastSecondRef.current >= 1.0) {
-          timeSinceLastSecondRef.current -= 1.0;
-          newState.timeRemaining = Math.max(0, newState.timeRemaining - 1);
+          const secondsElapsed = Math.floor(timeSinceLastSecondRef.current);
+          timeSinceLastSecondRef.current -= secondsElapsed;
+          newState.timeRemaining = Math.max(0, newState.timeRemaining - secondsElapsed);
         }
 
         // 5. Check win condition (mark completed but keep playing)
@@ -374,7 +375,6 @@ function Level2_MoulinRouge({ lives, onComplete, onLoseLife, onReturnToHub, onRe
 
       // Update the LOCAL animation frame ID
       animationFrameId = requestAnimationFrame(gameLoop);
-      animationRef.current = animationFrameId; // Sync to global ref just in case
     };
 
     gameLoop(performance.now());

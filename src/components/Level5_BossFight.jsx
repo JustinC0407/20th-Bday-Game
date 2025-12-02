@@ -397,6 +397,8 @@ function Level5_BossFight({ lives, onComplete, onLoseLife, onReturnToHub, onRese
   useEffect(() => {
     if (!gameState.gameStarted || gameState.gameOver || gameState.levelCompleted) return;
 
+    let animationFrameId = null; // Local variable for THIS effect instance
+
     const loop = (time) => {
       const deltaTime = (time - lastTimeRef.current) / 1000;
       lastTimeRef.current = time;
@@ -520,10 +522,14 @@ function Level5_BossFight({ lives, onComplete, onLoseLife, onReturnToHub, onRese
         return next;
       });
 
-      animationRef.current = requestAnimationFrame(loop);
+      animationFrameId = requestAnimationFrame(loop);
     };
-    animationRef.current = requestAnimationFrame(loop);
-    return () => cancelAnimationFrame(animationRef.current);
+    animationFrameId = requestAnimationFrame(loop);
+    return () => {
+      if (animationFrameId !== null) {
+        cancelAnimationFrame(animationFrameId);
+      }
+    };
   }, [gameState.gameStarted, gameState.gameOver, gameState.levelCompleted]);
 
   // ============ RENDERING ============
