@@ -276,7 +276,7 @@ function App() {
       <GameShell
         progress={gameState.progress}
         lives={gameState.lives}
-        showProgressBar={gameState.currentScreen !== 'hub'}
+        showProgressBar={gameState.currentScreen !== 'hub' && gameState.currentScreen !== 'level3'}
         showLives={gameState.currentScreen !== 'level3'}
       />
     </div>
